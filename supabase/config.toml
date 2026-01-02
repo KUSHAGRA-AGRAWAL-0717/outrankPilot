@@ -1,0 +1,34 @@
+project_id = "vjasuruhlemdehynuqux"
+
+[functions.analyze-competitor]
+verify_jwt = false
+
+[functions.analyze-keywords]
+verify_jwt = false
+
+[functions.autopilot]
+verify_jwt = false
+
+[functions.compute-project-stats]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.export-project]
+verify_jwt = false
+
+[functions.export-project-pdf]
+verify_jwt = false
+
+[functions.generate-brief]
+verify_jwt = false
+
+[functions.publish-to-wordpress]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.track-rankings]
+verify_jwt = false
