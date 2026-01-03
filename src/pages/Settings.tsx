@@ -22,8 +22,7 @@ const tabs = [
   { id: "wordpress", label: "WordPress", icon: Globe },
   { id: "autopilot", label: "Autopilot", icon: Zap },
   { id: "account", label: "Account", icon: User },
-  { id: "api", label: "API Keys", icon: Key },
-  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "api", label: "API Keys", icon: Key }
 ];
 
 export default function Settings() {

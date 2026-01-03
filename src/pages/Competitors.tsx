@@ -222,9 +222,6 @@ export default function Competitors() {
                 <th className="text-left text-sm font-medium text-muted-foreground p-4">
                   Added On
                 </th>
-                <th className="text-right text-sm font-medium text-muted-foreground p-4">
-                  Action
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -295,34 +292,7 @@ export default function Competitors() {
                         {new Date(competitor.created_at).toLocaleDateString()}
                       </span>
                     </td>
-                    <td className="p-4 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={
-                          !competitor.gaps ||
-                          competitor.gaps.length === 0 ||
-                          bulkAddMutation.isPending
-                        }
-                        onClick={() =>
-                          bulkAddMutation.mutate({
-                            gaps: competitor.gaps || [],
-                          })
-                        }
-                      >
-                        {bulkAddMutation.isPending ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                            Adding...
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-4 w-4 mr-1" />
-                            Add Gaps
-                          </>
-                        )}
-                      </Button>
-                    </td>
+                   
                   </tr>
                 ))
               )}
