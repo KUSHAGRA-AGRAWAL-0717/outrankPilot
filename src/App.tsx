@@ -24,12 +24,6 @@ import AdminPage from "./pages/AdminPage";
 
 const queryClient = new QueryClient();
 
-function CompetitorsWithProject() {
-  const { currentProject } = useApp();
-  if (!currentProject) return <div className="p-6">No project selected.</div>;
-  return <Competitors projectId={currentProject.id} />;
-}
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AppProvider>
@@ -109,7 +103,7 @@ const App = () => (
               path="/competitor-analysis"
               element={
                 <ProtectedRoute>
-                  <CompetitorsWithProject />
+                  <Competitors />
                 </ProtectedRoute>
               }
             />

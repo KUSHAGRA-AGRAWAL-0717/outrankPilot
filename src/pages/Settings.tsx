@@ -43,7 +43,6 @@ export default function Settings() {
   const [paused, setPaused] = useState(false);
   const [dailyLimit, setDailyLimit] = useState(1);
 
-  /* ---------------- Subscription check ---------------- */
   useEffect(() => {
     const loadSubscription = async () => {
       const { data, error } = await supabase
@@ -66,7 +65,6 @@ export default function Settings() {
     loadSubscription();
   }, [currentProject]);
 
-  /* ---------------- Load project settings ---------------- */
   useEffect(() => {
     const loadSettings = async () => {
       if (!currentProject) {
@@ -107,18 +105,16 @@ export default function Settings() {
     loadSettings();
   }, [currentProject]);
 
-  /* ---------------- Early loading UI ---------------- */
   if (loading || autoPublishAllowed === null) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#1B64F2]" />
         </div>
       </DashboardLayout>
     );
   }
 
-  /* ---------------- Handlers ---------------- */
   const handleSaveWordPress = async () => {
     if (!currentProject) {
       toast.error("Please select a project first");
@@ -217,11 +213,11 @@ export default function Settings() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl space-y-6 dark">
+      <div className="max-w-4xl space-y-6 bg-[#F6F8FC] min-h-screen p-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold text-[#0B1F3B]">Settings</h1>
+          <p className="text-[#5B6B8A]">
             Manage your account and integrations
           </p>
         </div>
@@ -235,8 +231,8 @@ export default function Settings() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   activeTab === tab.id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    ? "bg-[#1B64F2]/10 text-[#1B64F2]"
+                    : "text-[#5B6B8A] hover:bg-[#F6F8FC] hover:text-[#0B1F3B]"
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
@@ -246,40 +242,39 @@ export default function Settings() {
           </div>
 
           {/* Content */}
-          <div className="flex-1 rounded-xl border border-border bg-card p-6 shadow-card">
+          <div className="flex-1 rounded-xl border border-[#8A94B3]/30 bg-white p-6 shadow-sm">
             {activeTab === "wordpress" && (
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
-                    <Globe className="h-6 w-6 text-blue-500" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#1B64F2]/10">
+                    <Globe className="h-6 w-6 text-[#1B64F2]" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-foreground">
+                    <h2 className="text-lg font-semibold text-[#0B1F3B]">
                       WordPress Integration
                     </h2>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-[#5B6B8A]">
                       Connect your WordPress site for one-click publishing
                     </p>
                   </div>
                 </div>
 
                 {connected ? (
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                  <div className="rounded-lg border border-[#3EF0C1]/30 bg-[#3EF0C1]/5 p-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20">
-                        <Check className="h-5 w-5 text-primary" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#3EF0C1]/20">
+                        <Check className="h-5 w-5 text-[#0B1F3B]" />
                       </div>
                       <div>
-                        <p className="font-medium text-foreground">
+                        <p className="font-medium text-[#0B1F3B]">
                           Connected to WordPress
                         </p>
-                        <p className="text-sm text-muted-foreground">{wpUrl}</p>
+                        <p className="text-sm text-[#5B6B8A]">{wpUrl}</p>
                       </div>
                     </div>
                     <Button
-                      variant="outline"
+                      className="mt-4 bg-white hover:bg-[#F6F8FC] text-[#5B6B8A] border border-[#8A94B3]/30"
                       size="sm"
-                      className="mt-4"
                       onClick={handleDisconnect}
                     >
                       Disconnect
@@ -288,11 +283,11 @@ export default function Settings() {
                 ) : (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">
+                      <label className="text-sm font-medium text-[#0B1F3B]">
                         Language
                       </label>
                       <select
-                        className="w-full rounded-md border border-border bg-background p-3 text-sm"
+                        className="w-full rounded-md border border-[#8A94B3]/30 bg-white p-3 text-sm text-[#0B1F3B]"
                         value={language}
                         onChange={(e) => setLanguage(e.target.value)}
                       >
@@ -308,11 +303,11 @@ export default function Settings() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">
+                      <label className="text-sm font-medium text-[#0B1F3B]">
                         Country/Region
                       </label>
                       <select
-                        className="w-full rounded-md border border-border bg-background p-3 text-sm"
+                        className="w-full rounded-md border border-[#8A94B3]/30 bg-white p-3 text-sm text-[#0B1F3B]"
                         value={country}
                         onChange={(e) => setCountry(e.target.value)}
                       >
@@ -327,29 +322,31 @@ export default function Settings() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">
+                      <label className="text-sm font-medium text-[#0B1F3B]">
                         Site URL
                       </label>
                       <Input
                         placeholder="https://yourdomain.com"
                         value={wpUrl}
                         onChange={(e) => setWpUrl(e.target.value)}
+                        className="border-[#8A94B3]/30 focus:ring-2 focus:ring-[#1B64F2] "
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">
+                      <label className="text-sm font-medium text-[#0B1F3B]">
                         Username
                       </label>
                       <Input
                         placeholder="admin"
                         value={wpUsername}
                         onChange={(e) => setWpUsername(e.target.value)}
+                        className="border-[#8A94B3]/30 focus:ring-2 focus:ring-[#1B64F2]"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">
+                      <label className="text-sm font-medium text-[#0B1F3B]">
                         Application Password
                       </label>
                       <Input
@@ -357,14 +354,15 @@ export default function Settings() {
                         placeholder="xxxx xxxx xxxx xxxx"
                         value={wpPassword}
                         onChange={(e) => setWpPassword(e.target.value)}
+                        className="border-[#8A94B3]/30 focus:ring-2 focus:ring-[#1B64F2]"
                       />
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-[#8A94B3]">
                         Create in WordPress: Users → Profile → Application Passwords
                       </p>
                     </div>
 
                     <Button
-                      className="w-full"
+                      className="w-full bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] font-semibold"
                       onClick={handleSaveWordPress}
                       disabled={saving || !currentProject}
                     >
@@ -381,12 +379,12 @@ export default function Settings() {
             )}
 
             {activeTab === "autopilot" && !autoPublishAllowed && (
-              <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 text-center dark:border-yellow-800 dark:bg-yellow-950/20">
-                <Zap className="mx-auto h-12 w-12 text-yellow-500" />
-                <h3 className="mt-4 text-lg font-semibold text-foreground">
+              <div className="rounded-lg border border-[#FFD84D]/50 bg-[#FFD84D]/10 p-6 text-center">
+                <Zap className="mx-auto h-12 w-12 text-[#FFD84D]" />
+                <h3 className="mt-4 text-lg font-semibold text-[#0B1F3B]">
                   Autopilot Upgrade Required
                 </h3>
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className="mt-2 text-sm text-[#5B6B8A]">
                   Your current plan doesn't include autopilot publishing. Upgrade to unlock
                   automatic daily content publishing.
                 </p>
@@ -396,39 +394,38 @@ export default function Settings() {
             {activeTab === "autopilot" && autoPublishAllowed && (
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10">
-                    <Zap className="h-6 w-6 text-emerald-500" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#3EF0C1]/10">
+                    <Zap className="h-6 w-6 text-[#3EF0C1]" />
                   </div>
                   <div>
                     <div className="flex items-center gap-3">
-                      <h2 className="text-lg font-semibold text-foreground">
+                      <h2 className="text-lg font-semibold text-[#0B1F3B]">
                         Autopilot Publishing
                       </h2>
                       {autopilotEnabled ? (
-                        <Badge className="bg-green-600 text-white">Autopilot Active</Badge>
+                        <Badge className="bg-[#3EF0C1] text-[#0B1F3B]">Autopilot Active</Badge>
                       ) : (
-                        <Badge variant="secondary">Autopilot Off</Badge>
+                        <Badge className="bg-[#F6F8FC] text-[#5B6B8A] border border-[#8A94B3]/30">Autopilot Off</Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-[#8A94B3] mt-1">
                       Runs automatically via background cron jobs
                     </p>
                   </div>
                 </div>
 
                 {!connected ? (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/20">
-                    <p className="text-sm text-amber-800 dark:text-amber-300">
+                  <div className="rounded-lg border border-[#FFD84D]/50 bg-[#FFD84D]/10 p-4">
+                    <p className="text-sm text-[#0B1F3B]">
                       ⚠️ Please connect WordPress first before enabling Autopilot.
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {/* Enable/Disable Toggle */}
-                    <div className="flex items-center justify-between rounded-lg border p-4">
+                    <div className="flex items-center justify-between rounded-lg border border-[#8A94B3]/30 p-4">
                       <div>
-                        <p className="font-semibold text-foreground">Enable Daily Publishing</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-semibold text-[#0B1F3B]">Enable Daily Publishing</p>
+                        <p className="text-sm text-[#5B6B8A]">
                           Automatically publish one generated brief daily as a draft
                         </p>
                       </div>
@@ -439,107 +436,101 @@ export default function Settings() {
                       />
                     </div>
 
-                    {/* Pause/Resume Button */}
                     {autopilotEnabled && (
-                      <div className="flex items-center justify-between rounded-lg border p-4">
-                        <div>
-                          <p className="font-semibold text-foreground">
-                            {paused ? "Autopilot Paused" : "Autopilot Running"}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {paused 
-                              ? "Resume to continue automatic publishing" 
-                              : "Pause to temporarily stop publishing"}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={async () => {
-                            await supabase
-                              .from("projects")
-                              .update({ paused: !paused })
-                              .eq("id", currentProject.id);
-
-                            setPaused(!paused);
-                            toast.success(paused ? "Autopilot resumed" : "Autopilot paused");
-                          }}
-                        >
-                          {paused ? "Resume Autopilot" : "Pause Autopilot"}
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Daily Limit */}
-                    {autopilotEnabled && (
-                      <div className="space-y-2 rounded-lg border p-4">
-                        <label className="text-sm font-medium text-foreground">
-                          Daily Publish Limit
-                        </label>
-                        <select
-                          className="w-full rounded-md border border-border bg-background p-2 text-sm"
-                          value={dailyLimit}
-                          onChange={async (e) => {
-                            const value = Number(e.target.value);
-                            setDailyLimit(value);
-                            await supabase
-                              .from("projects")
-                              .update({ daily_publish_limit: value })
-                              .eq("id", currentProject.id);
-                            toast.success("Daily limit updated");
-                          }}
-                        >
-                          <option value={1}>1 / day</option>
-                          <option value={3}>3 / day</option>
-                          <option value={5}>5 / day</option>
-                        </select>
-                        <p className="text-xs text-muted-foreground">
-                          Maximum number of briefs to publish per day
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Publish Time */}
-                    {autopilotEnabled && (
-                      <div className="space-y-3 p-4 border rounded-lg">
-                        <label className="text-sm font-medium text-foreground block">
-                          Publish Time (UTC)
-                        </label>
-                        <div className="flex gap-3 items-end">
-                          <Input
-                            type="time"
-                            value={autopilotTime}
-                            onChange={(e) => setAutopilotTime(e.target.value)}
-                            className="flex-1"
-                          />
+                      <>
+                        <div className="flex items-center justify-between rounded-lg border border-[#8A94B3]/30 p-4">
+                          <div>
+                            <p className="font-semibold text-[#0B1F3B]">
+                              {paused ? "Autopilot Paused" : "Autopilot Running"}
+                            </p>
+                            <p className="text-sm text-[#5B6B8A]">
+                              {paused 
+                                ? "Resume to continue automatic publishing" 
+                                : "Pause to temporarily stop publishing"}
+                            </p>
+                          </div>
                           <Button
                             size="sm"
-                            variant="outline"
-                            onClick={handleSaveAutopilotTime}
+                            className="bg-white hover:bg-[#F6F8FC] text-[#5B6B8A] border border-[#8A94B3]/30"
+                            onClick={async () => {
+                              await supabase
+                                .from("projects")
+                                .update({ paused: !paused })
+                                .eq("id", currentProject.id);
+
+                              setPaused(!paused);
+                              toast.success(paused ? "Autopilot resumed" : "Autopilot paused");
+                            }}
                           >
-                            Save Time
+                            {paused ? "Resume Autopilot" : "Pause Autopilot"}
                           </Button>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Content will be published as drafts at this time daily (UTC)
-                        </p>
-                      </div>
-                    )}
 
-                    {/* How It Works */}
-                    <div className="rounded-lg bg-secondary/50 p-4 border">
-                      <h4 className="font-semibold mb-3 text-foreground flex items-center gap-2">
-                        <Zap className="h-4 w-4" />
-                        How Autopilot Works
-                      </h4>
-                      <ul className="text-sm space-y-1 text-muted-foreground">
-                        <li>• Runs automatically via background worker</li>
-                        <li>• Preferred publish time is respected when possible</li>
-                        <li>• Picks unpublished generated brief</li>
-                        <li>• Creates WordPress draft automatically</li>
-                        <li>• Review & publish when ready</li>
-                      </ul>
-                    </div>
+                        <div className="space-y-2 rounded-lg border border-[#8A94B3]/30 p-4">
+                          <label className="text-sm font-medium text-[#0B1F3B]">
+                            Daily Publish Limit
+                          </label>
+                          <select
+                            className="w-full rounded-md border border-[#8A94B3]/30 bg-white p-2 text-sm text-[#0B1F3B]"
+                            value={dailyLimit}
+                            onChange={async (e) => {
+                              const value = Number(e.target.value);
+                              setDailyLimit(value);
+                              await supabase
+                                .from("projects")
+                                .update({ daily_publish_limit: value })
+                                .eq("id", currentProject.id);
+                              toast.success("Daily limit updated");
+                            }}
+                          >
+                            <option value={1}>1 / day</option>
+                            <option value={3}>3 / day</option>
+                            <option value={5}>5 / day</option>
+                          </select>
+                          <p className="text-xs text-[#8A94B3]">
+                            Maximum number of briefs to publish per day
+                          </p>
+                        </div>
+
+                        <div className="space-y-3 p-4 border border-[#8A94B3]/30 rounded-lg">
+                          <label className="text-sm font-medium text-[#0B1F3B] block">
+                            Publish Time (UTC)
+                          </label>
+                          <div className="flex gap-3 items-end">
+                            <Input
+                              type="time"
+                              value={autopilotTime}
+                              onChange={(e) => setAutopilotTime(e.target.value)}
+                              className="flex-1 border-[#8A94B3]/30 focus:ring-2 focus:ring-[#1B64F2] "
+                            />
+                            <Button
+                              size="sm"
+                              className="bg-white hover:bg-[#F6F8FC] text-[#5B6B8A] border border-[#8A94B3]/30"
+                              onClick={handleSaveAutopilotTime}
+                            >
+                              Save Time
+                            </Button>
+                          </div>
+                          <p className="text-xs text-[#8A94B3]">
+                            Content will be published as drafts at this time daily (UTC)
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg bg-[#F6F8FC] p-4 border border-[#8A94B3]/30">
+                          <h4 className="font-semibold mb-3 text-[#0B1F3B] flex items-center gap-2">
+                            <Zap className="h-4 w-4" />
+                            How Autopilot Works
+                          </h4>
+                          <ul className="text-sm space-y-1 text-[#5B6B8A]">
+                            <li>• Runs automatically via background worker</li>
+                            <li>• Preferred publish time is respected when possible</li>
+                            <li>• Picks unpublished generated brief</li>
+                            <li>• Creates WordPress draft automatically</li>
+                            <li>• Review & publish when ready</li>
+                          </ul>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -548,26 +539,26 @@ export default function Settings() {
             {activeTab === "account" && (
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                    <User className="h-6 w-6 text-primary" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#1B64F2]/10">
+                    <User className="h-6 w-6 text-[#1B64F2]" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-foreground">Account Settings</h2>
-                    <p className="text-sm text-muted-foreground">
+                    <h2 className="text-lg font-semibold text-[#0B1F3B]">Account Settings</h2>
+                    <p className="text-sm text-[#5B6B8A]">
                       Manage your profile and preferences
                     </p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Full Name</label>
-                    <Input placeholder="John Doe" />
+                    <label className="text-sm font-medium text-[#0B1F3B]">Full Name</label>
+                    <Input placeholder="John Doe" className="border-[#8A94B3]/30" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Email</label>
-                    <Input placeholder="john@example.com" type="email" />
+                    <label className="text-sm font-medium text-[#0B1F3B]">Email</label>
+                    <Input placeholder="john@example.com" type="email" className="border-[#8A94B3]/30" />
                   </div>
-                  <Button className="w-full" variant="outline">
+                  <Button className="w-full bg-white hover:bg-[#F6F8FC] text-[#5B6B8A] border border-[#8A94B3]/30">
                     <Save className="h-4 w-4 mr-2" />
                     Save Changes
                   </Button>
@@ -578,80 +569,42 @@ export default function Settings() {
             {activeTab === "api" && (
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-yellow-500/10">
-                    <Key className="h-6 w-6 text-yellow-500" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#FFD84D]/20">
+                    <Key className="h-6 w-6 text-[#0B1F3B]" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-foreground">API Keys</h2>
-                    <p className="text-sm text-muted-foreground">
+                    <h2 className="text-lg font-semibold text-[#0B1F3B]">API Keys</h2>
+                    <p className="text-sm text-[#5B6B8A]">
                       Manage your API integrations
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <div className="p-4 rounded-lg border bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
+                  <div className="p-4 rounded-lg border bg-[#3EF0C1]/10 border-[#3EF0C1]/30">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-foreground">OpenAI API Key</p>
-                        <p className="text-sm text-muted-foreground">For AI content generation</p>
+                        <p className="font-medium text-[#0B1F3B]">OpenAI API Key</p>
+                        <p className="text-sm text-[#5B6B8A]">For AI content generation</p>
                       </div>
-                      <div className="flex items-center gap-2 text-emerald-600">
+                      <div className="flex items-center gap-2 text-[#0B1F3B]">
                         <Check className="h-4 w-4" />
                         <span className="text-sm font-medium">Configured</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-lg border">
+                  <div className="p-4 rounded-lg border border-[#8A94B3]/30">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-foreground">SERP API Key</p>
-                        <p className="text-sm text-muted-foreground">For keyword rankings (optional)</p>
+                        <p className="font-medium text-[#0B1F3B]">SERP API Key</p>
+                        <p className="text-sm text-[#5B6B8A]">For keyword rankings (optional)</p>
                       </div>
-                      <Button variant="outline" size="sm">
+                      <Button className="bg-white hover:bg-[#F6F8FC] text-[#5B6B8A] border border-[#8A94B3]/30" size="sm">
                         Configure
                       </Button>
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === "notifications" && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/10">
-                    <Bell className="h-6 w-6 text-purple-500" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-foreground">Notifications</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Configure how you receive updates
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {[
-                    { label: "Brief completed", description: "When a content brief is ready" },
-                    {
-                      label: "Content published",
-                      description: "When content is published to WordPress",
-                    },
-                    { label: "Weekly digest", description: "Summary of your content performance" },
-                  ].map((item) => (
-                    <div
-                      key={item.label}
-                      className="flex items-center justify-between rounded-lg border p-4"
-                    >
-                      <div>
-                        <p className="font-medium text-foreground">{item.label}</p>
-                        <p className="text-sm text-muted-foreground">{item.description}</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                  ))}
                 </div>
               </div>
             )}

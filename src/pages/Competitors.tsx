@@ -13,7 +13,6 @@ export default function Competitors() {
   const [domain, setDomain] = useState("");
   const queryClient = useQueryClient();
 
-  // Realtime subscription
   useEffect(() => {
     if (!currentProject) return;
 
@@ -48,16 +47,17 @@ export default function Competitors() {
     },
     enabled: !!currentProject,
   });
+  
   const { data: activeJobs } = useQuery({
     queryKey: ["active-jobs", currentProject?.id],
     queryFn: async () => {
       const { data } = await supabase
-  .from("job_logs")
-  .select("id, payload, status")
-  .eq("job_type", "analyze-competitor")
-  .in("status", ["pending", "processing"])
-  .eq("payload->>project_id", currentProject?.id)  // ✅ Now correct
-  .order("created_at", { ascending: false });
+        .from("job_logs")
+        .select("id, payload, status")
+        .eq("job_type", "analyze-competitor")
+        .in("status", ["pending", "processing"])
+        .eq("payload->>project_id", currentProject?.id)
+        .order("created_at", { ascending: false });
       return data || [];
     },
     enabled: !!currentProject,
@@ -68,26 +68,24 @@ export default function Competitors() {
     mutationFn: async (domain: string) => {
       if (!currentProject || !user) throw new Error("No project or user found");
 
-      // ✅ NEW: Instead of calling the Edge Function directly, we insert into the queue
       const { data, error } = await supabase
-  .from("job_logs")
-  .insert({
-    job_type: "analyze-competitor",
-    status: "pending",
-    payload: {
-      domain,
-      project_id: currentProject.id,
-      user_id: user.id,  // Keep here for worker/RLS
-    },
-  })
-  .select()
-  .single();
+        .from("job_logs")
+        .insert({
+          job_type: "analyze-competitor",
+          status: "pending",
+          payload: {
+            domain,
+            project_id: currentProject.id,
+            user_id: user.id,
+          },
+        })
+        .select()
+        .single();
 
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      // Invalidate queries so the user sees the "Pending" state if you choose to show it
       queryClient.invalidateQueries(["competitors", currentProject?.id]);
       toast.success("Analysis started in the background!");
       setDomain("");
@@ -142,7 +140,7 @@ export default function Competitors() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#1B64F2]" />
         </div>
       </DashboardLayout>
     );
@@ -150,33 +148,33 @@ export default function Competitors() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 dark">
-        {/* Header - Styled like Keywords */}
+      <div className="space-y-6 bg-[#F6F8FC] min-h-screen p-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
+            <h1 className="text-2xl font-bold text-[#0B1F3B]">
               Competitor Analysis
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-[#5B6B8A]">
               Analyze competitor domains and find content gaps
             </p>
           </div>
         </div>
 
-        {/* Add Competitor - Styled like Keywords */}
+        {/* Add Competitor */}
         <div className="flex gap-4 max-w-2xl">
           <div className="relative flex-1">
-            <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A94B3]" />
             <Input
               placeholder="Enter competitor domain (e.g., example.com)..."
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddCompetitor()}
-              className="pl-10 input-contrast" // Key Fix: Match the Keywords input style
+              className="pl-10 h-12 bg-white border-[#8A94B3]/30 focus:ring-2 focus:ring-[#1B64F2] focus:border-[#1B64F2]"
             />
           </div>
           <Button
-            variant="gradient"
+            className="bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] font-semibold h-12"
             onClick={handleAddCompetitor}
             disabled={analyzeMutation.isPending || !currentProject}
           >
@@ -192,73 +190,67 @@ export default function Competitors() {
         </div>
 
         {!currentProject && (
-          <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
-            <p className="text-sm text-yellow-600 dark:text-yellow-400">
+          <div className="rounded-lg border border-[#FFD84D]/50 bg-[#FFD84D]/10 p-4">
+            <p className="text-sm text-[#0B1F3B]">
               Please create or select a project first to analyze competitors.
             </p>
           </div>
         )}
 
-        {/* Competitors Table - Wrapped in a card like Keywords */}
-        <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
-          <table className="w-full table-contrast">
+        {/* Competitors Table */}
+        <div className="rounded-xl border border-[#8A94B3]/30 bg-white shadow-sm overflow-hidden">
+          <table className="w-full">
             <thead>
-              <tr className="border-b border-border bg-secondary/50">
-                <th className="text-left text-sm font-medium text-muted-foreground p-4">
+              <tr className="border-b border-[#8A94B3]/30 bg-[#F6F8FC]">
+                <th className="text-left text-sm font-medium text-[#5B6B8A] p-4">
                   <div className="flex items-center gap-2">
                     <Globe className="h-4 w-4" />
                     Domain
                   </div>
                 </th>
-                <th className="text-left text-sm font-medium text-muted-foreground p-4">
+                <th className="text-left text-sm font-medium text-[#5B6B8A] p-4">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4" />
                     Traffic Estimate
                   </div>
                 </th>
-                <th className="text-left text-sm font-medium text-muted-foreground p-4">
-                  Content Gaps
-                </th>
-                <th className="text-left text-sm font-medium text-muted-foreground p-4">
+               
+                <th className="text-left text-sm font-medium text-[#5B6B8A] p-4">
                   Added On
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
-              {/* 1. Show Active Background Jobs First */}
+            <tbody className="divide-y divide-[#8A94B3]/30">
+              {/* Active Background Jobs */}
               {activeJobs?.map((job: any) => (
-                <tr key={job.id} className="bg-primary/5 animate-pulse">
+                <tr key={job.id} className="bg-[#1B64F2]/5 animate-pulse">
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                      <span className="font-medium text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin text-[#1B64F2]" />
+                      <span className="font-medium text-[#0B1F3B]">
                         {job.payload.domain}
                       </span>
                     </div>
                   </td>
-                  <td className="p-4 text-muted-foreground italic">
+                  <td className="p-4 text-[#5B6B8A] italic">
                     Analyzing...
                   </td>
                   <td className="p-4">
-                    <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium">
+                    <span className="inline-flex items-center rounded-full bg-[#F6F8FC] px-2.5 py-0.5 text-xs font-medium text-[#5B6B8A] border border-[#8A94B3]/30">
                       {job.status === "processing"
                         ? "AI Processing"
                         : "In Queue"}
                     </span>
                   </td>
-                  <td className="p-4 text-muted-foreground">—</td>
-                  <td className="p-4 text-right">
-                    <Button disabled variant="ghost" size="sm">
-                      Waiting
-                    </Button>
-                  </td>
+                  <td className="p-4 text-[#8A94B3]">—</td>
                 </tr>
               ))}
+              
               {!competitors?.data || competitors.data.length === 0 ? (
                 <tr>
                   <td
                     colSpan={5}
-                    className="p-8 text-center text-muted-foreground"
+                    className="p-8 text-center text-[#5B6B8A]"
                   >
                     No competitors analyzed yet. Add a competitor domain to get
                     started.
@@ -268,31 +260,26 @@ export default function Competitors() {
                 competitors.data.map((competitor: any) => (
                   <tr
                     key={competitor.id}
-                    className="hover:bg-secondary/30 transition-colors"
+                    className="hover:bg-[#F6F8FC]/50 transition-colors"
                   >
                     <td className="p-4">
-                      <span className="font-medium text-foreground">
+                      <span className="font-medium text-[#0B1F3B]">
                         {competitor.domain}
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className="text-foreground">
+                      <span className="text-[#0B1F3B]">
                         {competitor.traffic_estimate
                           ? competitor.traffic_estimate.toLocaleString()
                           : "—"}
                       </span>
                     </td>
+                   
                     <td className="p-4">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                        {competitor.gaps?.length || 0} gaps found
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-muted-foreground">
+                      <span className="text-[#5B6B8A]">
                         {new Date(competitor.created_at).toLocaleDateString()}
                       </span>
                     </td>
-                   
                   </tr>
                 ))
               )}

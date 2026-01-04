@@ -39,55 +39,64 @@ export default function Calendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [autopilotEnabled] = useState(true); // You can connect this to your actual autopilot state
+  const [autopilotEnabled] = useState(true);
 
-  /* ---------------- Fetch calendar events ---------------- */
   useEffect(() => {
-    if (!currentProject) return;
+    if (!currentProject) {
+      setLoading(false);
+      return;
+    }
 
     const fetchEvents = async () => {
       setLoading(true);
 
-      const startOfMonth = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth(),
-        1
-      );
-      const endOfMonth = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth() + 1,
-        0
-      );
-
-      const start = startOfMonth.toISOString().split('T')[0];
-      const end = endOfMonth.toISOString().split('T')[0];
-
-      const { data } = await supabase
-        .from('calendar_events')
-        .select('id, title, scheduled_date, status, brief_id')
-        .eq('project_id', currentProject.id)
-        .gte('scheduled_date', start)
-        .lte('scheduled_date', end);
-
-      if (data) {
-        setEvents(
-          data.map(e => ({
-            id: e.id,
-            briefId: e.brief_id,
-            title: e.title,
-            date: e.scheduled_date,
-            status: e.status as 'scheduled' | 'published' | 'draft',
-          }))
+      try {
+        const startOfMonth = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth(),
+          1
         );
-      }
+        const endOfMonth = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth() + 1,
+          0
+        );
 
-      setLoading(false);
+        const start = startOfMonth.toISOString().split('T')[0];
+        const end = endOfMonth.toISOString().split('T')[0];
+
+        const { data, error } = await supabase
+          .from('calendar_events')
+          .select('id, title, scheduled_date, status, brief_id')
+          .eq('project_id', currentProject.id)
+          .gte('scheduled_date', start)
+          .lte('scheduled_date', end);
+
+        if (error) {
+          console.error('Error fetching events:', error);
+          setEvents([]);
+        } else {
+          setEvents(
+            (data || []).map(e => ({
+              id: e.id,
+              briefId: e.brief_id,
+              title: e.title,
+              date: e.scheduled_date,
+              status: e.status as 'scheduled' | 'published' | 'draft',
+            }))
+          );
+        }
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchEvents();
   }, [currentProject, currentDate]);
 
-  /* ---------------- Calendar helpers ---------------- */
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -139,9 +148,7 @@ export default function Calendar() {
   const days = getDaysInMonth(currentDate);
   const autopilotDates = getAutopilotPreviewDates();
 
-  /* ---------------- Drag & Drop Components ---------------- */
   function DraggableEvent({ event }: { event: CalendarEvent }) {
-    // Prevent dragging published posts
     if (event.status === 'published') {
       return (
         <div
@@ -150,7 +157,7 @@ export default function Calendar() {
               navigate(`/briefs/${event.briefId}`);
             }
           }}
-          className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs cursor-pointer bg-primary/10 text-primary`}
+          className="flex items-center gap-1.5 rounded px-2 py-1 text-xs cursor-pointer bg-[#3EF0C1]/10 text-[#0B1F3B] border border-[#3EF0C1]/30"
         >
           <FileText className="h-3 w-3" />
           <span className="truncate">{event.title}</span>
@@ -180,8 +187,8 @@ export default function Calendar() {
         }}
         className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs cursor-grab active:cursor-grabbing ${
           event.status === 'scheduled'
-            ? 'bg-blue-500/10 text-blue-500'
-            : 'bg-muted text-muted-foreground'
+            ? 'bg-[#1B64F2]/10 text-[#1B64F2] border border-[#1B64F2]/30'
+            : 'bg-[#F6F8FC] text-[#5B6B8A] border border-[#8A94B3]/30'
         }`}
       >
         <FileText className="h-3 w-3" />
@@ -198,7 +205,7 @@ export default function Calendar() {
     return (
       <div 
         ref={setNodeRef} 
-        className={`min-h-[120px] p-2 ${isOver ? 'bg-primary/5 ring-2 ring-primary/20 ring-inset' : ''}`}
+        className={`min-h-[120px] p-2 ${isOver ? 'bg-[#1B64F2]/5 ring-2 ring-[#1B64F2]/20 ring-inset' : ''}`}
       >
         {children}
       </div>
@@ -213,26 +220,23 @@ export default function Calendar() {
     const newDate = over.id as string;
     const eventId = active.id as string;
 
-    // Optimistic UI update
     setEvents(prev =>
       prev.map(e =>
         e.id === eventId ? { ...e, date: newDate } : e
       )
     );
 
-    // Persist to DB
     await supabase
       .from('calendar_events')
       .update({ scheduled_date: newDate })
       .eq('id', eventId);
   };
 
-  /* ---------------- Loading ---------------- */
   if (loading) {
     return (
       <DashboardLayout>
         <div className="flex h-64 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#1B64F2]" />
         </div>
       </DashboardLayout>
     );
@@ -240,22 +244,22 @@ export default function Calendar() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 bg-[#F6F8FC] min-h-screen p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Content Calendar</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl font-bold text-[#0B1F3B]">Content Calendar</h1>
+            <p className="text-[#5B6B8A]">
               Plan and schedule your content publishing
             </p>
           </div>
-          <Button
-            variant="default"
+          {/* <Button
+            className="bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] font-semibold"
             onClick={() => navigate('/briefs/new')}
           >
             <Plus className="h-4 w-4 mr-2" />
             Schedule Post
-          </Button>
+          </Button> */}
         </div>
 
         {/* Status Filters */}
@@ -264,7 +268,10 @@ export default function Calendar() {
             <Button
               key={s}
               size="sm"
-              variant={statusFilter === s ? 'default' : 'outline'}
+              className={statusFilter === s 
+                ? 'bg-[#1B64F2] text-white hover:bg-[#1246C9]' 
+                : 'bg-white text-[#5B6B8A] hover:bg-[#F6F8FC] border border-[#8A94B3]/30'
+              }
               onClick={() => setStatusFilter(s)}
             >
               {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -273,26 +280,32 @@ export default function Calendar() {
         </div>
 
         {/* Calendar */}
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+        <div className="overflow-hidden rounded-xl border border-[#8A94B3]/30 bg-white shadow-lg">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-border p-4">
-            <Button variant="ghost" size="icon" onClick={prevMonth}>
+          <div className="flex items-center justify-between border-b border-[#8A94B3]/30 p-4 bg-white">
+            <Button 
+              className="h-10 w-10 p-0 bg-transparent hover:bg-[#F6F8FC] text-[#5B6B8A]"
+              onClick={prevMonth}
+            >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <h2 className="text-lg font-semibold text-foreground">
+            <h2 className="text-lg font-semibold text-[#0B1F3B]">
               {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h2>
-            <Button variant="ghost" size="icon" onClick={nextMonth}>
+            <Button 
+              className="h-10 w-10 p-0 bg-transparent hover:bg-[#F6F8FC] text-[#5B6B8A]"
+              onClick={nextMonth}
+            >
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
 
           {/* Days Header */}
-          <div className="grid grid-cols-7 border-b border-border">
+          <div className="grid grid-cols-7 border-b border-[#8A94B3]/30">
             {DAYS.map((day) => (
               <div
                 key={day}
-                className="bg-secondary/30 p-3 text-center text-sm font-medium text-muted-foreground"
+                className="bg-[#F6F8FC] p-3 text-center text-sm font-medium text-[#5B6B8A]"
               >
                 {day}
               </div>
@@ -320,8 +333,8 @@ export default function Calendar() {
                 return (
                   <div
                     key={idx}
-                    className={`min-h-[120px] border-b border-r border-border ${
-                      day ? 'hover:bg-secondary/30' : 'bg-secondary/10'
+                    className={`min-h-[120px] border-b border-r border-[#8A94B3]/30 ${
+                      day ? 'hover:bg-[#F6F8FC]/50' : 'bg-[#F6F8FC]/30'
                     }`}
                   >
                     {day ? (
@@ -329,8 +342,8 @@ export default function Calendar() {
                         <span
                           className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm ${
                             isToday
-                              ? 'bg-primary text-primary-foreground'
-                              : 'text-foreground'
+                              ? 'bg-[#FFD84D] text-[#0B1F3B] font-bold'
+                              : 'text-[#0B1F3B]'
                           }`}
                         >
                           {day}
@@ -342,7 +355,7 @@ export default function Calendar() {
                           ))}
 
                           {isAutopilotDate && (
-                            <div className="mt-1 rounded border border-dashed border-green-500 px-2 py-1 text-xs text-green-600">
+                            <div className="mt-1 rounded border border-dashed border-[#3EF0C1] px-2 py-1 text-xs text-[#0B1F3B] bg-[#3EF0C1]/5">
                               ⚡ Autopilot
                             </div>
                           )}

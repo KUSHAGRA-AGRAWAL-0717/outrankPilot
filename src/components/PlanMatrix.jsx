@@ -42,7 +42,6 @@ export default function PlanMatrix() {
   const [currency, setCurrency] = useState({ code: "GHS", symbol: "GH₵", rate: 1 });
 
   useEffect(() => {
-    // Basic auto-detection logic
     const locale = navigator.language;
     if (locale.includes("en-US")) setCurrency({ code: "USD", symbol: "$", rate: 0.065 });
     else if (locale.includes("en-IN")) setCurrency({ code: "INR", symbol: "₹", rate: 5.40 });
@@ -55,47 +54,44 @@ export default function PlanMatrix() {
   };
 
   const subscribe = async (planId) => {
-  if (planId === "free") return;
-  setLoading(planId);
-  
-  try {
-    const { data, error } = await supabase.functions.invoke("create-checkout", {
-      body: { planId: planId, currency: currency.code },
-    });
+    if (planId === "free") return;
+    setLoading(planId);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { planId: planId, currency: currency.code },
+      });
 
-    // 1. Check for Supabase Invocation errors (like network/404)
-    if (error) {
-      console.error("Invoke Error:", error);
-      alert(`System Error: ${error.message}`);
-      return;
-    }
+      if (error) {
+        console.error("Invoke Error:", error);
+        alert(`System Error: ${error.message}`);
+        return;
+      }
 
-    // 2. Check for Logic errors returned from your Edge Function
-    if (data?.error) {
-      console.error("Logic Error:", data.error);
-      alert(`Payment Error: ${data.error}`);
-      return;
-    }
+      if (data?.error) {
+        console.error("Logic Error:", data.error);
+        alert(`Payment Error: ${data.error}`);
+        return;
+      }
 
-    // 3. Success Redirect
-    if (data?.checkout_url) {
-      window.location.href = data.checkout_url;
-    } else {
-      alert("No checkout URL received.");
+      if (data?.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        alert("No checkout URL received.");
+      }
+    } catch (err) {
+      console.error("Unexpected Error:", err);
+      alert("An unexpected error occurred.");
+    } finally {
+      setLoading(null);
     }
-  } catch (err) {
-    console.error("Unexpected Error:", err);
-    alert("An unexpected error occurred.");
-  } finally {
-    setLoading(null);
-  }
-};
+  };
 
   return (
-    <div className="py-12 px-4 bg-black min-h-screen">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-white mb-4">Simple, Transparent Pricing</h1>
-        <p className="text-gray-400">Choose the plan that fits your growth.</p>
+    <div className="py-24 px-6 bg-[#F6F8FC] min-h-screen">
+      <div className="text-center mb-16">
+        <h1 className="text-4xl font-bold text-[#0B1F3B] mb-4">Simple, Transparent Pricing</h1>
+        <p className="text-lg text-[#5B6B8A]">Choose the plan that fits your growth.</p>
       </div>
 
       <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -104,47 +100,52 @@ export default function PlanMatrix() {
           return (
             <div 
               key={plan.id} 
-              className={`relative flex flex-col p-8 rounded-2xl border transition-all duration-300 ${
+              className={`relative flex flex-col p-8 rounded-2xl border transition-all duration-300 bg-white ${
                 plan.popular 
-                ? "bg-gray-900 border-primary ring-2 ring-primary shadow-[0_0_20px_rgba(var(--primary),0.3)] scale-105 z-10" 
-                : "bg-gray-950 border-gray-800 hover:border-gray-700"
+                ? "border-[#1B64F2] ring-2 ring-[#1B64F2] shadow-xl scale-105 z-10" 
+                : "border-[#8A94B3]/30 hover:border-[#1B64F2]/50 hover:shadow-lg"
               }`}
             >
               {plan.popular && (
-                <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                <span className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#FFD84D] text-[#0B1F3B] px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-md">
                   Most Popular
                 </span>
               )}
 
               <div className="mb-8">
-                <div className="flex items-center gap-2 mb-2 text-primary">
-                  <Icon size={24} />
-                  <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2A1E5C]">
+                    <Icon className="h-6 w-6 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-[#0B1F3B]">{plan.name}</h3>
                 </div>
-                <p className="text-sm text-gray-400 leading-relaxed">{plan.description}</p>
+                <p className="text-sm text-[#5B6B8A] leading-relaxed">{plan.description}</p>
               </div>
 
               <div className="mb-8">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-white">{formatPrice(plan.ghsPrice)}</span>
-                  {plan.ghsPrice > 0 && <span className="text-gray-500 font-medium">/mo</span>}
+                  <span className="text-5xl font-bold text-[#0B1F3B]">{formatPrice(plan.ghsPrice)}</span>
+                  {plan.ghsPrice > 0 && <span className="text-[#5B6B8A] font-medium">/mo</span>}
                 </div>
               </div>
 
               <div className="flex-grow space-y-4 mb-8">
                 {plan.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-start gap-3 text-sm text-gray-300">
-                    <Check size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>{feature}</span>
+                  <div key={idx} className="flex items-start gap-3 text-sm text-[#5B6B8A]">
+                    <Check className="h-5 w-5 text-[#3EF0C1] flex-shrink-0 mt-0.5" />
+                    <span className="leading-relaxed">{feature}</span>
                   </div>
                 ))}
               </div>
 
-              <Button
+              <button
                 disabled={loading !== null || plan.id === "free"}
                 onClick={() => subscribe(plan.id)}
-                className="w-full h-12 text-md font-semibold"
-                variant={plan.popular ? "default" : "outline"}
+                className={`w-full py-3 px-6 rounded-full font-semibold text-base transition-all ${
+                  plan.popular 
+                  ? "bg-[#FFD84D] text-[#0B1F3B] hover:bg-[#F5C842] shadow-md hover:shadow-lg hover:-translate-y-0.5" 
+                  : "bg-transparent border-2 border-[#1B64F2] text-[#1B64F2] hover:bg-[#1B64F2] hover:text-white"
+                } ${(loading !== null || plan.id === "free") ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 {loading === plan.id ? (
                   "Initializing..."
@@ -153,10 +154,16 @@ export default function PlanMatrix() {
                 ) : (
                   `Upgrade to ${plan.name}`
                 )}
-              </Button>
+              </button>
             </div>
           );
         })}
+      </div>
+
+      <div className="text-center mt-12">
+        <p className="text-[#5B6B8A]">
+          All plans include a 7-day free trial. Cancel anytime, no questions asked.
+        </p>
       </div>
     </div>
   );

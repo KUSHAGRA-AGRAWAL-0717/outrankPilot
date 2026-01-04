@@ -28,45 +28,57 @@ export function Header() {
   };
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-background px-6">
+    <header className="flex h-20 items-center justify-between border-b border-[#8A94B3]/30 bg-white px-8">
       {/* Search */}
       <div className="relative w-96">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A94B3]" />
         <Input
           placeholder="Search keywords, briefs..."
-          className="pl-10 bg-secondary border-0"
+          className="pl-12 bg-white border-[#8A94B3]/30 rounded-xl h-12 focus:ring-2 focus:ring-[#1B64F2] focus:border-[#1B64F2]"
         />
       </div>
 
       {/* Actions */}
       <div className="flex items-center gap-4">
-        
-        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-primary">
-                <User className="h-4 w-4 text-primary-foreground" />
+            <button className="flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-[#F6F8FC] transition-all">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFD84D]">
+                <User className="h-5 w-5 text-[#0B1F3B]" />
               </div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">
+              <div className="text-left hidden md:block">
+                <p className="text-sm font-semibold text-[#0B1F3B]">
                   {profile?.full_name || user?.email?.split('@')[0] || 'User'}
                 </p>
-                <p className="text-xs leading-none text-muted-foreground">
+                <p className="text-xs text-[#5B6B8A]">
+                  {user?.email}
+                </p>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64 rounded-xl border-[#8A94B3]/30 shadow-lg bg-white">
+            <DropdownMenuLabel className="pb-3">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-semibold text-[#0B1F3B]">
+                  {profile?.full_name || user?.email?.split('@')[0] || 'User'}
+                </p>
+                <p className="text-xs text-[#5B6B8A]">
                   {user?.email}
                 </p>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/settings')}>
+            <DropdownMenuSeparator className="bg-[#8A94B3]/30" />
+            <DropdownMenuItem 
+              onClick={() => navigate('/settings')}
+              className="cursor-pointer rounded-lg mx-1 my-1 text-[#0B1F3B] hover:bg-[#F6F8FC]"
+            >
               Settings
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+            <DropdownMenuSeparator className="bg-[#8A94B3]/30" />
+            <DropdownMenuItem 
+              onClick={handleSignOut} 
+              className="cursor-pointer rounded-lg mx-1 my-1 text-red-600 hover:bg-red-50 focus:text-red-600"
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Sign out
             </DropdownMenuItem>

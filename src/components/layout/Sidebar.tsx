@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
+import logo from "../../../public/logo2.jpeg";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -31,14 +32,15 @@ export function Sidebar() {
   const [projectsOpen, setProjectsOpen] = useState(false);
 
   return (
-    <aside className="flex h-screen w-64 flex-col bg-sidebar border-r border-sidebar-border">
+    <aside className="flex h-screen w-64 flex-col bg-white border-r border-[#8A94B3]/30">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2 px-6 border-b border-sidebar-border">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
-          <Sparkles className="h-4 w-4 text-primary-foreground" />
+      <div className="flex h-20 items-center gap-2 px-6 border-b border-[#8A94B3]/30">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFD84D]">
+          <img src={logo} alt="OutrankPilot Logo" className="h-10 w-10 rounded-full" />
         </div>
-        <span className="text-lg font-semibold text-sidebar-foreground">
-         OutrankPilot
+        
+        <span className="text-xl font-bold text-[#0B1F3B]">
+          OutrankPilot
         </span>
       </div>
 
@@ -46,37 +48,37 @@ export function Sidebar() {
       <div className="p-4">
         <button
           onClick={() => setProjectsOpen(!projectsOpen)}
-          className="flex w-full items-center justify-between rounded-lg bg-sidebar-accent p-3 transition-colors hover:bg-sidebar-accent/80"
+          className="flex w-full items-center justify-between rounded-xl bg-[#F6F8FC] p-4 transition-all hover:bg-[#F6F8FC]/80 border border-[#8A94B3]/30"
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1B64F2]/10">
               {currentProject ? (
-                <Globe className="h-4 w-4 text-primary" />
+                <Globe className="h-5 w-5 text-[#1B64F2]" />
               ) : (
-                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                <FolderOpen className="h-5 w-5 text-[#5B6B8A]" />
               )}
             </div>
             <div className="text-left">
-              <p className="text-sm font-medium text-sidebar-foreground">
+              <p className="text-sm font-semibold text-[#0B1F3B]">
                 {currentProject?.name || "No Project"}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-[#5B6B8A]">
                 {currentProject?.domain || "Create your first project"}
               </p>
             </div>
           </div>
           <ChevronDown
             className={cn(
-              "h-4 w-4 text-muted-foreground transition-transform",
+              "h-5 w-5 text-[#5B6B8A] transition-transform duration-200",
               projectsOpen && "rotate-180"
             )}
           />
         </button>
 
         {projectsOpen && (
-          <div className="mt-2 space-y-1 rounded-lg border border-sidebar-border bg-card p-2 animate-scale-in">
+          <div className="mt-2 space-y-1 rounded-xl border border-[#8A94B3]/30 bg-white p-2 shadow-lg animate-scale-in">
             {projects.length === 0 ? (
-              <p className="px-2 py-3 text-sm text-muted-foreground text-center">
+              <p className="px-3 py-4 text-sm text-[#5B6B8A] text-center">
                 No projects yet
               </p>
             ) : (
@@ -90,19 +92,19 @@ export function Sidebar() {
                       setProjectsOpen(false);
                     }}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors",
+                      "flex w-full items-center gap-3 rounded-lg p-3 text-left transition-all",
                       currentProject?.id === project.id
-                        ? "bg-primary/10 text-primary"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent"
+                        ? "bg-[#1B64F2]/10 text-[#1B64F2]"
+                        : "text-[#0B1F3B] hover:bg-[#F6F8FC]"
                     )}
                   >
                     <Globe className="h-4 w-4" />
                     <div className="flex-1 truncate">
-                      <span className="text-sm block truncate">
+                      <span className="text-sm font-medium block truncate">
                         {project.name}
                       </span>
                       {project.domain && (
-                        <span className="text-xs text-muted-foreground truncate block">
+                        <span className="text-xs text-[#5B6B8A] truncate block">
                           {project.domain}
                         </span>
                       )}
@@ -111,14 +113,10 @@ export function Sidebar() {
                 ))
             )}
             <Link to="/projects/new">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start gap-2 mt-2"
-              >
+              <button className="w-full flex items-center justify-center gap-2 mt-2 px-4 py-2.5 text-sm font-medium text-[#1B64F2] hover:bg-[#F6F8FC] rounded-lg transition-all border border-[#1B64F2]/30">
                 <Plus className="h-4 w-4" />
                 Add Project
-              </Button>
+              </button>
             </Link>
           </div>
         )}
@@ -133,10 +131,10 @@ export function Sidebar() {
               key={item.name}
               to={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+                "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
                 isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent"
+                  ? "bg-[#FFD84D] text-[#0B1F3B] shadow-md"
+                  : "text-[#0B1F3B] hover:bg-[#F6F8FC]"
               )}
             >
               <item.icon className="h-5 w-5" />
@@ -147,18 +145,18 @@ export function Sidebar() {
       </nav>
 
       {/* Usage Stats */}
-      <div className="p-4 border-t border-sidebar-border">
-        <div className="rounded-lg bg-sidebar-accent p-4">
+      <div className="p-4 border-t border-[#8A94B3]/30">
+        <div className="rounded-xl bg-[#F6F8FC] p-4 border border-[#8A94B3]/30">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs font-medium text-[#5B6B8A]">
               Monthly Briefs
             </span>
-            <span className="text-xs font-medium text-sidebar-foreground">
+            <span className="text-xs font-bold text-[#0B1F3B]">
               0/50
             </span>
           </div>
-          <div className="h-1.5 rounded-full bg-sidebar-border overflow-hidden">
-            <div className="h-full w-0 rounded-full bg-gradient-primary" />
+          <div className="h-2 rounded-full bg-[#8A94B3]/20 overflow-hidden">
+            <div className="h-full w-0 rounded-full bg-[#1B64F2] transition-all" />
           </div>
         </div>
       </div>

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/contexts/AppContext';
+import logo from "../../public/logo2.jpeg"
 
 const features = [
   {
@@ -42,32 +43,126 @@ const steps = [
   { step: '04', title: 'Publish Content', description: 'One-click publishing to WordPress' },
 ];
 
+const pricingPlans = [
+  {
+    name: 'Starter',
+    price: '$49',
+    period: '/month',
+    description: 'Perfect for individuals and small blogs',
+    features: [
+      '1 Project',
+      '30 Articles/month on auto-pilot',
+      '1 User',
+      '50 Keywords tracked',
+      '100 AI Images/month',
+      'Articles in 150+ languages',
+      'Unlimited AI Rewrites',
+      'YouTube video integration',
+      'Auto Keyword Research',
+      'Connect to WordPress, Ghost, Webflow',
+    ],
+    highlighted: false,
+  },
+  {
+    name: 'Professional',
+    price: '$99',
+    period: '/month',
+    description: 'For growing businesses and agencies',
+    features: [
+      '5 Projects',
+      '30 Articles/month per project',
+      '3 Users',
+      '200 Keywords tracked',
+      '500 AI Images/month',
+      'Articles in 150+ languages',
+      'Unlimited AI Rewrites',
+      'YouTube video integration',
+      'Auto Keyword Research',
+      'All integrations: WordPress, Ghost, Webflow, Notion, Wix, Shopify, Webhook, Framer',
+    ],
+    highlighted: true,
+  },
+  {
+    name: 'Enterprise',
+    price: '$249',
+    period: '/month',
+    description: 'For large teams and organizations',
+    features: [
+      'Unlimited Projects',
+      '30 Articles/month per project',
+      'Unlimited Users',
+      'Unlimited Keywords tracked',
+      'Unlimited AI Images',
+      'Articles in 150+ languages',
+      'Unlimited AI Rewrites',
+      'YouTube video integration',
+      'Auto Keyword Research',
+      'All integrations + Priority Support',
+      'Custom API access',
+      'Dedicated account manager',
+    ],
+    highlighted: false,
+  },
+];
+
+const resources = [
+  {
+    icon: FileText,
+    title: 'SEO Best Practices Guide',
+    description: 'Learn the fundamentals of creating content that ranks on Google.',
+    link: '#',
+  },
+  {
+    icon: BarChart3,
+    title: 'Content Strategy Templates',
+    description: 'Ready-to-use templates for planning your content calendar.',
+    link: '#',
+  },
+  {
+    icon: Zap,
+    title: 'AI Writing Tips',
+    description: 'Master the art of working with AI to create better content faster.',
+    link: '#',
+  },
+  {
+    icon: Target,
+    title: 'Keyword Research Playbook',
+    description: 'Step-by-step guide to finding keywords that drive traffic.',
+    link: '#',
+  },
+];
+
+const integrations = [
+  'WordPress', 'Ghost', 'Webflow', 'Notion', 'Wix', 'Shopify', 'Webhook', 'Framer'
+];
+
 export default function Index() {
   const { isAuthenticated } = useApp();
 
   return (
-    <div className="min-h-screen bg-background dark">
+    <div className="min-h-screen bg-cs-bg-light">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto flex h-16 items-center justify-between px-6">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100/50">
+        <div className="container mx-auto flex h-20 items-center justify-between px-6">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full cs-icon-bg">
+          
+              <img src={logo} alt="OutrankPilot Logo" className='h-9 w-9 rounded-full' />
             </div>
-            <span className="text-lg font-semibold text-foreground">Outrank</span>
+            <span className="text-xl font-bold cs-heading">OutrankPilot</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             {isAuthenticated ? (
               <Link to="/dashboard">
-                <Button variant="gradient">Go to Dashboard</Button>
+                <button className="cs-btn-primary">Go to Dashboard</button>
               </Link>
             ) : (
               <>
                 <Link to="/auth">
-                  <Button variant="ghost">Sign In</Button>
+                  <button className="cs-btn-secondary">Sign In</button>
                 </Link>
                 <Link to="/auth">
-                  <Button variant="gradient">Get Started</Button>
+                  <button className="cs-btn-primary">Get Started</button>
                 </Link>
               </>
             )}
@@ -76,44 +171,46 @@ export default function Index() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-hero" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(160_84%_45%/0.12),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,hsl(200_80%_50%/0.08),transparent_50%)]" />
+      <section className="relative pt-32 pb-24 overflow-hidden cs-bg-hero">
+        <div className="cs-decorative-shapes">
+          <div className="cs-shape-1"></div>
+          <div className="cs-shape-2"></div>
+          <div className="cs-floating-dots"></div>
+        </div>
         
-        <div className="container relative mx-auto px-6">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-4 py-2 text-sm backdrop-blur-sm">
-              <Zap className="h-4 w-4 text-primary" />
-              <span className="text-muted-foreground">AI-Powered SEO Content Generation</span>
+        <div className="container relative mx-auto px-6 z-10">
+          <div className="mx-auto max-w-4xl text-center">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-sm px-5 py-2.5 border border-white/30">
+              <Zap className="h-4 w-4 text-cs-accent" />
+              <span className="text-white/90 font-medium">AI-Powered SEO Content Generation</span>
             </div>
             
-            <h1 className="mb-6 text-5xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
+            <h1 className="mb-6 text-5xl font-bold text-white sm:text-6xl lg:text-7xl leading-tight">
               Create Content That
-              <span className="text-gradient block">Actually Ranks</span>
+              <span className="block mt-2 text-cs-accent">Actually Ranks</span>
             </h1>
             
-            <p className="mb-10 text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="mb-12 text-xl text-white/90 max-w-2xl mx-auto leading-relaxed">
               Generate comprehensive SEO content briefs powered by AI. 
               Analyze SERPs, optimize for keywords, and publish directly to WordPress.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/auth">
-                <Button variant="gradient" size="xl">
+                <button className="cs-btn-primary cs-btn-large">
                   Start Free Trial
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </button>
               </Link>
-              <Button variant="outline" size="xl">
+              <button className="cs-btn-secondary-inverted cs-btn-large">
                 Watch Demo
-              </Button>
+              </button>
             </div>
 
-            <div className="mt-10 flex items-center justify-center gap-8 text-sm text-muted-foreground">
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-white/80">
               {['No credit card required', '14-day free trial', 'Cancel anytime'].map((item) => (
                 <div key={item} className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <CheckCircle2 className="h-4 w-4 text-cs-success" />
                   <span>{item}</span>
                 </div>
               ))}
@@ -123,28 +220,28 @@ export default function Index() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 border-t border-border">
+      <section className="py-24">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-foreground mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold cs-heading mb-4">
               Everything You Need to Rank
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              From keyword research to publishing, Outrank streamlines your entire content workflow.
+            <p className="text-xl cs-body max-w-2xl mx-auto leading-relaxed">
+              From keyword research to publishing, OutrankPilot streamlines your entire content workflow.
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
             {features.map((feature) => (
               <div 
                 key={feature.title}
-                className="group rounded-xl border border-border bg-card p-6 shadow-card transition-all hover:shadow-elevated hover:border-primary/20"
+                className="cs-card group cursor-pointer hover:bg-cs-bg-light transition-all"
               >
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-                  <feature.icon className="h-6 w-6 text-primary" />
+                <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl cs-icon-bg group-hover:scale-105 transition-transform">
+                  <feature.icon className="h-10 w-10 text-white" />
                 </div>
-                <h3 className="mb-2 text-lg font-semibold text-foreground">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
+                <h3 className="mb-4 text-2xl font-bold cs-heading">{feature.title}</h3>
+                <p className="cs-body leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -152,27 +249,29 @@ export default function Index() {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 bg-secondary/30">
+      <section className="py-24 bg-white">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-foreground mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold cs-heading mb-4">
               How It Works
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-xl cs-body max-w-2xl mx-auto leading-relaxed">
               From zero to published content in four simple steps.
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
             {steps.map((step, index) => (
-              <div key={step.step} className="relative">
+              <div key={step.step} className="relative text-center group">
                 {index < steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-8 left-full w-full h-px bg-gradient-to-r from-border to-transparent z-0" />
+                  <div className="hidden lg:block absolute top-16 left-[55%] w-24 h-0.5 bg-gradient-to-r from-cs-primary-start to-cs-primary-end z-0" />
                 )}
                 <div className="relative z-10">
-                  <div className="mb-4 text-5xl font-bold text-primary/20">{step.step}</div>
-                  <h3 className="mb-2 text-lg font-semibold text-foreground">{step.title}</h3>
-                  <p className="text-muted-foreground">{step.description}</p>
+                  <div className="mb-6 mx-auto w-24 h-24 rounded-2xl bg-gradient-to-br from-cs-primary-start to-cs-primary-end flex items-center justify-center shadow-lg group-hover:scale-105 transition-all">
+                    <span className="text-2xl font-bold text-black">{step.step}</span>
+                  </div>
+                  <h3 className="mb-4 text-2xl font-bold cs-heading">{step.title}</h3>
+                  <p className="cs-body leading-relaxed">{step.description}</p>
                 </div>
               </div>
             ))}
@@ -180,23 +279,109 @@ export default function Index() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20">
+      {/* Integrations */}
+      <section className="py-24 bg-cs-bg-light">
         <div className="container mx-auto px-6">
-          <div className="rounded-2xl bg-gradient-hero border border-primary/20 p-12 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(160_84%_45%/0.15),transparent_70%)]" />
-            <div className="relative z-10">
-              <h2 className="text-3xl font-bold text-foreground mb-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold cs-heading mb-4">
+              Seamless Integrations
+            </h2>
+            <p className="text-xl cs-body max-w-2xl mx-auto leading-relaxed">
+              Connect with your favorite platforms and publish content everywhere.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-6 max-w-5xl mx-auto">
+            {integrations.map((integration) => (
+              <div 
+                key={integration}
+                className="cs-card px-8 py-6 hover:shadow-xl hover:-translate-y-2 transition-all flex items-center justify-center min-w-[140px]"
+              >
+                <span className="text-xl font-bold cs-heading">{integration}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="py-24 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold cs-heading mb-4">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-xl cs-body max-w-2xl mx-auto leading-relaxed">
+              Start with a 7-day free trial. No credit card required.
+            </p>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
+            {pricingPlans.map((plan) => (
+              <div 
+                key={plan.name}
+                className={`cs-card relative p-8 lg:p-10 group ${plan.highlighted ? 'ring-4 ring-cs-primary-end/10 shadow-2xl bg-gradient-to-br from-cs-primary-end/2 to-transparent border-cs-primary-end/20' : ''}`}
+              >
+                {plan.highlighted && (
+                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-cs-primary-end text-black px-6 py-2 rounded-full text-sm font-bold shadow-lg">
+                    Most Popular
+                  </div>
+                )}
+                
+                <div className="mb-8">
+                  <h3 className="text-3xl font-bold cs-heading mb-3">{plan.name}</h3>
+                  <p className="cs-body text-lg mb-6 opacity-90">{plan.description}</p>
+                  <div className="flex items-baseline">
+                    <span className="text-6xl font-bold cs-heading">{plan.price}</span>
+                    <span className="cs-body text-2xl ml-3">{plan.period}</span>
+                  </div>
+                </div>
+
+                <ul className="space-y-4 mb-10">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-4 group-hover:translate-x-2 transition-all">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-cs-success/20 mt-0.5 flex-shrink-0">
+                        <CheckCircle2 className="h-4 w-4 text-cs-success" />
+                      </div>
+                      <span className="cs-body text-base">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link to="/auth">
+                  <button className="w-full py-4 rounded-2xl font-semibold transition-all
+                    cs-btn-primary shadow-lg hover:shadow-xl hover:-translate-y-1">
+                    Start 7-Day Trial
+                  </button>
+                </Link>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-16">
+            <p className="text-lg cs-body max-w-2xl mx-auto">
+              All plans include a 7-day free trial. Cancel anytime, no questions asked.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-24 bg-gradient-to-b from-cs-bg-light to-white">
+        <div className="container mx-auto px-6">
+          <div className="cs-cta-box max-w-4xl mx-auto">
+            <div className="relative z-10 text-center">
+              <h2 className="text-4xl md:text-5xl font-bold cs-heading mb-6">
                 Ready to Outrank Your Competition?
               </h2>
-              <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+              <p className="text-xl cs-body mb-10 leading-relaxed max-w-2xl mx-auto">
                 Join thousands of content creators using AI to create SEO-optimized content that ranks.
               </p>
               <Link to="/auth">
-                <Button variant="gradient" size="xl">
+                <button className="cs-btn-primary cs-btn-large shadow-xl hover:shadow-2xl">
                   Start Your Free Trial
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </button>
               </Link>
             </div>
           </div>
@@ -204,17 +389,18 @@ export default function Index() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-12">
+      <footer className="border-t border-cs-body/20 py-12 bg-white">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
-                <Sparkles className="h-4 w-4 text-primary-foreground" />
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full cs-icon-bg">
+                
+                <img src={logo} alt="OutrankPilot Logo" className='h-9 w-9 rounded-full' />
               </div>
-              <span className="text-lg font-semibold text-foreground">Outrank</span>
+              <span className="text-2xl font-bold cs-heading">OutrankPilot</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              © 2024 Outrank. All rights reserved.
+            <p className="text-lg cs-muted text-center md:text-right">
+              © 2026 OutrankPilot. All rights reserved.
             </p>
           </div>
         </div>
