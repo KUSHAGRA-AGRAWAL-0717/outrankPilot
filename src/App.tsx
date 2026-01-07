@@ -18,6 +18,9 @@ import Competitors from "./pages/Competitors";
 import { useApp } from "@/contexts/AppContext";
 import PlansPage from "./pages/Plans.jsx";
 import EditBrief from "./pages/EditBrief";
+import BlogPage from "./pages/BlogPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import PublicServicesPage from "./pages/PublicServicesPage";
 
 import AdminGuard from "@/components/AdminGuard";
 import AdminPage from "./pages/AdminPage";
@@ -34,6 +37,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/public-services" element={<PublicServicesPage />} />
             <Route
               path="/plans"
               element={
@@ -58,7 +64,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/briefs"
               element={
@@ -68,13 +74,13 @@ const App = () => (
               }
             />
             <Route
-  path="/briefs/:briefId/edit"
-  element={
-    <ProtectedRoute>
-      <EditBrief />
-    </ProtectedRoute>
-  }
-/>
+              path="/briefs/:briefId/edit"
+              element={
+                <ProtectedRoute>
+                  <EditBrief />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/calendar"
               element={
