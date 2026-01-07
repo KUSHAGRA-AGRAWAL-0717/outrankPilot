@@ -12,10 +12,10 @@ const PublicServicesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F6F8FC]">
       {/* Hero */}
-      <section className="gradient-hero text-white py-32 px-6 md:px-12">
+      <section className="gradient-hero text-black py-32 px-6 md:px-12">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">Public Services</h1>
-          <p className="text-xl text-[#E2E8F0] mb-8">Core offerings for developers and freelancers.</p>
+          <p className="text-xl text-[#000000] mb-8">Core offerings for developers and freelancers.</p>
           <a href="/services" className="btn-primary px-8 py-4 text-lg font-semibold">View Full Catalog</a>
         </div>
       </section>
