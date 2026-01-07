@@ -5,10 +5,10 @@ const PrivacyPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F6F8FC]">
       {/* Hero */}
-      <section className="gradient-hero text-white py-32 px-6 md:px-12">
+      <section className="gradient-hero text-black py-32 px-6 md:px-12">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">Privacy Policy</h1>
-          <p className="text-xl text-[#E2E8F0] mb-8">Your data security is our priority. We comply with global standards.</p>
+          <p className="text-xl text-[#000000] mb-8">Your data security is our priority. We comply with global standards.</p>
         </div>
       </section>
 
@@ -47,7 +47,7 @@ const PrivacyPage: React.FC = () => {
               <li>• Opt-out of analytics via settings</li>
               <li>• Contact: outrankpilot.com</li>
             </ul>
-            <a href="/contact" className="btn-primary mt-8 inline-flex px-8 py-4 text-lg font-semibold">Exercise Rights</a>
+            <a href="/public-services" className="btn-primary mt-8 inline-flex px-8 py-4 text-lg font-semibold text-black">Exercise Rights</a>
           </div>
         </div>
       </section>
