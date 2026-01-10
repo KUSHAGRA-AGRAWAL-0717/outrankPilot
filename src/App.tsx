@@ -28,10 +28,10 @@ import AdminGuard from "@/components/AdminGuard";
 import AdminPage from "./pages/AdminPage";
 import Onboarding from "././pages/Onboarding.jsx";
 
-import StepIntegrations from "./pages/FilesBoard/StepIntegrations.js";
-import StepContent from "./pages/FilesBoard/StepBlogsArticles.js";
-import StepProject from "./pages/FilesBoard/StepProject.js";
-import StepKeywords from "./pages/FilesBoard/StepAudienceCompetitors.js";
+// import StepIntegrations from "./pages/FilesBoard/StepIntegrations.js";
+// import StepContent from "./pages/FilesBoard/StepBlogsArticles.js";
+// import StepProject from "./pages/FilesBoard/StepProject.js";
+// import StepKeywords from "./pages/FilesBoard/StepAudienceCompetitors.js";
 import { DashboardLayout } from "./components/layout/DashboardLayout.js";
 import Integrations from "./pages/Integrations.jsx";
 
@@ -87,7 +87,7 @@ const App = () => (
             />
 
             {/* just example route to check the pages */}
-            <Route
+            {/* <Route
               path="/step-project"
               element={
                 <ProtectedRoute>
@@ -121,7 +121,7 @@ const App = () => (
                   <StepKeywords />
                 </ProtectedRoute>
               }
-            />
+            /> */}
 
             <Route
               path="/keywords"
