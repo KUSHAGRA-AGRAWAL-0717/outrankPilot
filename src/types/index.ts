@@ -5,6 +5,8 @@ export interface Project {
   createdAt: Date;
   keywords: number;
   briefs: number;
+  ga_connected: boolean | null;
+  ga_property_id: string | null;
 }
 
 export interface Keyword {
@@ -12,7 +14,7 @@ export interface Keyword {
   keyword: string;
   volume: number;
   difficulty: number;
-  status: 'pending' | 'analyzing' | 'ready' | 'published';
+  status: "pending" | "analyzing" | "ready" | "published";
   projectId: string;
 }
 
@@ -21,7 +23,7 @@ export interface ContentBrief {
   title: string;
   keyword: string;
   wordCount: number;
-  status: 'draft' | 'generated' | 'published';
+  status: "draft" | "generated" | "published";
   createdAt: Date;
   publishedAt?: Date;
   projectId: string;
@@ -31,7 +33,7 @@ export interface CalendarEvent {
   id: string;
   title: string;
   date: Date;
-  status: 'scheduled' | 'published' | 'draft';
+  status: "scheduled" | "published" | "draft";
   briefId: string;
 }
 

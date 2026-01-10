@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Sparkles, Eye, EyeOff, User, X, CheckCircle2 } from 'lucide-react';
+import { 
+  Mail, Lock, ArrowRight, Sparkles, Eye, EyeOff, User, X, CheckCircle2,
+  ArrowRightLeft // Google icon replacement
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useApp } from '@/contexts/AppContext';
@@ -15,6 +18,7 @@ export default function Auth() {
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [isRecovery, setIsRecovery] = useState(false);
@@ -39,6 +43,27 @@ export default function Auth() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Google OAuth Handler
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+      
+      if (error) {
+        toast.error(error.message || 'Google sign-in failed');
+      }
+    } catch (err) {
+      toast.error('Google authentication error');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +91,7 @@ export default function Auth() {
           }
         } else {
           toast.success('Welcome back!');
-          navigate('/dashboard');
+          navigate('/onboarding');
         }
       } else {
         const { error } = await signUp(email, password, fullName);
@@ -78,7 +103,7 @@ export default function Auth() {
           }
         } else {
           toast.success('Account created successfully!');
-          navigate('/dashboard');
+          navigate('/onboarding');
         }
       }
     } catch (err) {
@@ -141,7 +166,7 @@ export default function Auth() {
 
   return (
     <div className="flex min-h-screen bg-white">
-      {/* Left Panel - Branding */}
+      {/* Left Panel - Branding (UNCHANGED) */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#0B1F8A] via-[#1246C9] to-[#1B64F2] items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-72 h-72 bg-[#3EF0C1] rounded-full blur-3xl"></div>
@@ -244,86 +269,117 @@ export default function Auth() {
 
           {/* Regular Auth Form */}
           {!isRecovery && (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {!isLogin && (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {!isLogin && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-[#0B1F3B]">Full Name</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A94B3]" />
+                      <Input
+                        type="text"
+                        placeholder="John Doe"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="pl-12 h-12 rounded-xl border-[#8A94B3]/30 bg-white focus:ring-2 focus:ring-[#1B64F2] focus:border-[#1B64F2]"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-[#0B1F3B]">Full Name</label>
+                  <label className="text-sm font-semibold text-[#0B1F3B]">Email</label>
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A94B3]" />
+                    <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A94B3]" />
                     <Input
-                      type="text"
-                      placeholder="John Doe"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       className="pl-12 h-12 rounded-xl border-[#8A94B3]/30 bg-white focus:ring-2 focus:ring-[#1B64F2] focus:border-[#1B64F2]"
+                      required
                     />
                   </div>
                 </div>
-              )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-[#0B1F3B]">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A94B3]" />
-                  <Input
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-12 h-12 rounded-xl border-[#8A94B3]/30 bg-white focus:ring-2 focus:ring-[#1B64F2] focus:border-[#1B64F2] "
-                    required
-                  />
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-[#0B1F3B]">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A94B3]" />
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-12 pr-12 h-12 rounded-xl border-[#8A94B3]/30 bg-white focus:ring-2 focus:ring-[#1B64F2] focus:border-[#1B64F2]"
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8A94B3] hover:text-[#0B1F3B]"
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                  {!isLogin && (
+                    <p className="text-xs text-[#8A94B3]">Must be at least 6 characters</p>
+                  )}
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-[#0B1F3B]">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A94B3]" />
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-12 pr-12 h-12 rounded-xl border-[#8A94B3]/30 bg-white focus:ring-2 focus:ring-[#1B64F2] focus:border-[#1B64F2] "
-                    required
-                    minLength={6}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8A94B3] hover:text-[#0B1F3B]"
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-                {!isLogin && (
-                  <p className="text-xs text-[#8A94B3]">Must be at least 6 characters</p>
+                {isLogin && (
+                  <div className="flex justify-end">
+                    <button 
+                      type="button" 
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-sm text-[#1B64F2] hover:text-[#1246C9] hover:underline disabled:opacity-50 font-medium"
+                      disabled={loading}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                 )}
+
+                <button 
+                  type="submit" 
+                  className="w-full h-12 rounded-xl bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] font-semibold transition-colors flex items-center justify-center gap-2"
+                  disabled={loading}
+                >
+                  {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              </form>
+
+              {/* GOOGLE OAUTH BUTTON - NEW */}
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#8A94B3]/30"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase text-[#8A94B3] mb-4">
+                  <span className="bg-[#F6F8FC] px-4 py-1">or</span>
+                </div>
               </div>
 
-              {isLogin && (
-                <div className="flex justify-end">
-                  <button 
-                    type="button" 
-                    onClick={() => setShowForgotPassword(true)}
-                    className="text-sm text-[#1B64F2] hover:text-[#1246C9] hover:underline disabled:opacity-50 font-medium"
-                    disabled={loading}
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-              )}
-
-              <button 
-                type="submit" 
-                className="w-full h-12 rounded-xl bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] font-semibold transition-colors flex items-center justify-center gap-2"
-                disabled={loading}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={loading || googleLoading}
+                className="w-full h-12 rounded-xl border-2 border-[#8A94B3]/30 bg-white hover:bg-[#F6F8FC] hover:border-[#1B64F2]/50 transition-all duration-200 flex items-center justify-center gap-3 text-[#0B1F3B] font-semibold shadow-sm hover:shadow-md"
               >
-                {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
-                <ArrowRight className="h-5 w-5" />
+                {googleLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-[#0B1F3B]/20 border-t-[#0B1F3B] rounded-full animate-spin"></div>
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    <ArrowRightLeft className="h-5 w-5 text-[#4285F4]" />
+                    <span>Continue with Google</span>
+                  </>
+                )}
               </button>
-            </form>
+            </>
           )}
 
           <p className="mt-8 text-center text-sm text-[#5B6B8A]">
@@ -346,7 +402,7 @@ export default function Auth() {
         </div>
       </div>
 
-      {/* Forgot Password Modal */}
+      {/* Forgot Password Modal (UNCHANGED) */}
       {showForgotPassword && (
         <div className="fixed inset-0 bg-[#0B1F3B]/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-8 w-full max-w-md border border-[#8A94B3]/20 shadow-2xl">
@@ -369,7 +425,7 @@ export default function Auth() {
                 value={resetEmail || email}
                 onChange={(e) => setResetEmail(e.target.value)}
                 disabled={loading}
-                className="h-12 rounded-xl border-[#8A94B3]/30 bg-white focus:ring-2 focus:ring-[#1B64F2] "
+                className="h-12 rounded-xl border-[#8A94B3]/30 bg-white focus:ring-2 focus:ring-[#1B64F2]"
               />
             </div>
             <div className="flex gap-3">

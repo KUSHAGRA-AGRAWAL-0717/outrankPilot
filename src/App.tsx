@@ -11,7 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Keywords from "./pages/Keywords";
 import Briefs from "./pages/Briefs";
 import Calendar from "./pages/Calendar";
-import Settings from "./pages/Settings";
+import Settings from "./pages/Integrations.js";
 import NewProject from "./pages/NewProject";
 import NotFound from "./pages/NotFound";
 import Competitors from "./pages/Competitors";
@@ -21,9 +21,23 @@ import EditBrief from "./pages/EditBrief";
 import BlogPage from "./pages/BlogPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import PublicServicesPage from "./pages/PublicServicesPage";
-
+import AuthCallback from "./pages/AuthCallback";
+import AuthNotionCallback from "./pages/AuthNotionCallback";
+import Autopilot from "./pages/Autopilot.js";
 import AdminGuard from "@/components/AdminGuard";
 import AdminPage from "./pages/AdminPage";
+import Onboarding from "././pages/Onboarding.jsx";
+
+import StepIntegrations from "./pages/onBoarding/StepIntegrations.jsx";
+import StepContent from "./pages/onBoarding/StepBlogsArticles.jsx";
+import StepProject from "./pages/onBoarding/StepProject.jsx";
+import StepKeywords from "./pages/onBoarding/StepAudienceCompetitors.jsx";
+import { DashboardLayout } from "./components/layout/DashboardLayout.js";
+import Integrations from "./pages/Integrations.jsx";
+
+const PageWithSidebar = ({ children }) => {
+  return <DashboardLayout>{children}</DashboardLayout>;
+}
 
 const queryClient = new QueryClient();
 
@@ -40,6 +54,11 @@ const App = () => (
             <Route path="/blog" element={<BlogPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/public-services" element={<PublicServicesPage />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route
+              path="/auth/notion/callback"
+              element={<AuthNotionCallback />}
+            />
             <Route
               path="/plans"
               element={
@@ -52,15 +71,61 @@ const App = () => (
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <PageWithSidebar><Dashboard /></PageWithSidebar>
                 </ProtectedRoute>
               }
             />
+             <Route
+              path="/onboarding"
+              element={
+                <ProtectedRoute>
+                  <Onboarding />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* just example route to check the pages */}
+            <Route
+            path="/step-project"
+            element={
+              <ProtectedRoute>
+                <StepProject />
+              </ProtectedRoute>
+            }
+            />
+
+            <Route
+            path="/step-integrations"
+            element={
+                  <ProtectedRoute>
+                  <StepIntegrations />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+            path="/step-content"
+            element={
+                <ProtectedRoute>
+                  <StepContent />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+            path="/step-keywords"
+            element={
+                <ProtectedRoute>
+                  <StepKeywords />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/keywords"
               element={
                 <ProtectedRoute>
-                  <Keywords />
+                   <PageWithSidebar><Keywords /></PageWithSidebar>
                 </ProtectedRoute>
               }
             />
@@ -69,7 +134,7 @@ const App = () => (
               path="/briefs"
               element={
                 <ProtectedRoute>
-                  <Briefs />
+                    <PageWithSidebar><Briefs /></PageWithSidebar>
                 </ProtectedRoute>
               }
             />
@@ -77,7 +142,15 @@ const App = () => (
               path="/briefs/:briefId/edit"
               element={
                 <ProtectedRoute>
-                  <EditBrief />
+                    <PageWithSidebar><EditBrief /></PageWithSidebar>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/autopilot"
+              element={
+                <ProtectedRoute>
+                   <PageWithSidebar><Autopilot /></PageWithSidebar>
                 </ProtectedRoute>
               }
             />
@@ -85,15 +158,15 @@ const App = () => (
               path="/calendar"
               element={
                 <ProtectedRoute>
-                  <Calendar />
+                  <PageWithSidebar><Calendar /></PageWithSidebar>
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/settings"
+              path="/integrations"
               element={
                 <ProtectedRoute>
-                  <Settings />
+                  <PageWithSidebar><Integrations /></PageWithSidebar>
                 </ProtectedRoute>
               }
             />
@@ -101,7 +174,7 @@ const App = () => (
               path="/projects/new"
               element={
                 <ProtectedRoute>
-                  <NewProject />
+                   <PageWithSidebar><NewProject /></PageWithSidebar>
                 </ProtectedRoute>
               }
             />
@@ -109,7 +182,7 @@ const App = () => (
               path="/competitor-analysis"
               element={
                 <ProtectedRoute>
-                  <Competitors />
+                    <PageWithSidebar><Competitors /></PageWithSidebar>
                 </ProtectedRoute>
               }
             />

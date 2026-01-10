@@ -68,14 +68,14 @@ export default function EditBrief() {
 
   if (!data) {
     return (
-      <DashboardLayout>
+     
         <div style={{ padding: 32, color: '#9CA3AF' }}>Loading…</div>
-      </DashboardLayout>
+    
     );
   }
 
   return (
-    <DashboardLayout>
+   <div>
       <div
         className="edit-brief"
         style={{
@@ -311,8 +311,7 @@ export default function EditBrief() {
     font-weight: 500;
   }
 `}</style>
-
-    </DashboardLayout>
+    </div>
   );
 }
 

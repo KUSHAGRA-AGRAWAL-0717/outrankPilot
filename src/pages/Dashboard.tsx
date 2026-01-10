@@ -31,6 +31,21 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+  const checkOnboarding = async () => {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .single();
+    
+    if (!profile?.onboarding_completed) {
+      navigate("/onboarding");
+    }
+  };
+  checkOnboarding();
+}, []);
+
+
+  useEffect(() => {
     const fetchStats = async () => {
       if (!currentProject) return;
       setLoading(true);
@@ -101,7 +116,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <DashboardLayout>
+    
       <div className="space-y-8 bg-[#F6F8FC] min-h-screen p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -268,6 +283,5 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

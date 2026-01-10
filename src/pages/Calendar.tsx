@@ -234,16 +234,16 @@ export default function Calendar() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+
         <div className="flex h-64 items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-[#1B64F2]" />
         </div>
-      </DashboardLayout>
+   
     );
   }
 
   return (
-    <DashboardLayout>
+    
       <div className="space-y-6 bg-[#F6F8FC] min-h-screen p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -369,6 +369,5 @@ export default function Calendar() {
           </DndContext>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

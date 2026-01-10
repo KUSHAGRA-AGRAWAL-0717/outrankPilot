@@ -281,6 +281,8 @@ export type Database = {
           country_code: string | 'US'
           daily_publish_limit: number | 3
           paused: boolean | null
+          ga_connected: boolean | null
+          ga_property_id: string | null
         }
         Insert: {
           autopilot_enabled?: boolean | null

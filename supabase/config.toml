@@ -24,10 +24,25 @@ verify_jwt = false
 [functions.generate-brief]
 verify_jwt = false
 
-[functions.publish-to-wordpress]
+[functions.ga-report]
 verify_jwt = false
 
-[functions.stripe-webhook]
+[functions.ga-properties]
+verify_jwt = false
+
+[functions.ga-exchange]
+verify_jwt = false
+
+[functions.notion-exchange]
+verify_jwt = false
+
+[functions.publish-notion]
+verify_jwt = false
+
+[functions.test-notion-database]
+verify_jwt = false
+
+[functions.notion-webhook]
 verify_jwt = false
 
 [functions.track-rankings]

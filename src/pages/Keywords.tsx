@@ -171,16 +171,15 @@ export default function Keywords() {
 
   if (loading) {
     return (
-      <DashboardLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-[#1B64F2]" />
         </div>
-      </DashboardLayout>
+      
     );
   }
 
   return (
-    <DashboardLayout>
+
       <div className="space-y-6 bg-[#F6F8FC] min-h-screen p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -320,6 +319,5 @@ export default function Keywords() {
           </>
         )}
       </div>
-    </DashboardLayout>
   );
 }

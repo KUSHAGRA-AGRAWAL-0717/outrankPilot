@@ -65,6 +65,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         createdAt: new Date(p.created_at),
         keywords: 0,
         briefs: 0,
+        ga_connected: p.ga_connected,
+        ga_property_id: p.ga_property_id,
       }));
       setProjects(formattedProjects);
       if (formattedProjects.length > 0 && !currentProject) {

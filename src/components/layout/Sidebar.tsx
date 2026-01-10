@@ -11,11 +11,13 @@ import {
   Globe,
   Sparkles,
   FolderOpen,
+  Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
 import logo from "../../../public/logo2.jpeg";
+import Autopilot from "@/pages/Autopilot";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -23,9 +25,10 @@ const navigation = [
   { name: "Content Briefs", href: "/briefs", icon: FileText },
   { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Competitor Analysis", href: "/competitor-analysis", icon: Globe },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Autopilot", href: "/autopilot", icon: Zap },
+  { name: "Integrations", href: "/integrations", icon: Settings },
 ];
-
+  
 export function Sidebar() {
   const location = useLocation();
   const { currentProject, projects, setCurrentProject } = useApp();
