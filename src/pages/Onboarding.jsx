@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import OnboardingLayout from "../components/layout/OnboardingLayout";
-import StepProject from "./onboarding/StepProject";
-import StepAudienceCompetitors from "./onboarding/StepAudienceCompetitors";
-import StepBlogsArticles from "./onboarding/StepBlogsArticles";
-import StepIntegrations from "./onboarding/StepIntegrations";
+import StepProject from "./FilesBoard/StepProject";
+import StepAudienceCompetitors from "./FilesBoard/StepAudienceCompetitors";
+import StepBlogsArticles from "./FilesBoard/StepBlogsArticles";
+import StepIntegrations from "./FilesBoard/StepIntegrations";
 
-import { Loader2 } from "lucide-react";
 
 const STEPS = [
   { id: 0, title: "Create Project" },

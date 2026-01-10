@@ -14,10 +14,9 @@ import {
   Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
 import logo from "../../../public/logo2.jpeg";
-import Autopilot from "@/pages/Autopilot";
+
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },

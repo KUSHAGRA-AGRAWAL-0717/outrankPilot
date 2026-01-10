@@ -1,8 +1,6 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, FileText, Sparkles } from "lucide-react";
+import { FileText, Sparkles } from "lucide-react";
 import Briefs from "../Briefs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function StepBlogsArticles({ projectId, onNext, onPrev }) {
   const [briefsCreated, setBriefsCreated] = useState(false);

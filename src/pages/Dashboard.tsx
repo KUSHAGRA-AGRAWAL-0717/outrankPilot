@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ExportProjectButtons from "../components/ExportProjectButtons";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useApp } from "@/contexts/AppContext";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";

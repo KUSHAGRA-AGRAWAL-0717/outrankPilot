@@ -4,7 +4,6 @@ import {
   Mail, Lock, ArrowRight, Sparkles, Eye, EyeOff, User, X, CheckCircle2,
   ArrowRightLeft // Google icon replacement
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useApp } from '@/contexts/AppContext';
 import { toast } from 'sonner';

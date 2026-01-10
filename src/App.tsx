@@ -28,16 +28,16 @@ import AdminGuard from "@/components/AdminGuard";
 import AdminPage from "./pages/AdminPage";
 import Onboarding from "././pages/Onboarding.jsx";
 
-import StepIntegrations from "./pages/onBoarding/StepIntegrations.jsx";
-import StepContent from "./pages/onBoarding/StepBlogsArticles.jsx";
-import StepProject from "./pages/onBoarding/StepProject.jsx";
-import StepKeywords from "./pages/onBoarding/StepAudienceCompetitors.jsx";
+import StepIntegrations from "./pages/FilesBoard/StepIntegrations.js";
+import StepContent from "./pages/FilesBoard/StepBlogsArticles.js";
+import StepProject from "./pages/FilesBoard/StepProject.js";
+import StepKeywords from "./pages/FilesBoard/StepAudienceCompetitors.js";
 import { DashboardLayout } from "./components/layout/DashboardLayout.js";
 import Integrations from "./pages/Integrations.jsx";
 
 const PageWithSidebar = ({ children }) => {
   return <DashboardLayout>{children}</DashboardLayout>;
-}
+};
 
 const queryClient = new QueryClient();
 
@@ -71,11 +71,13 @@ const App = () => (
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <PageWithSidebar><Dashboard /></PageWithSidebar>
+                  <PageWithSidebar>
+                    <Dashboard />
+                  </PageWithSidebar>
                 </ProtectedRoute>
               }
             />
-             <Route
+            <Route
               path="/onboarding"
               element={
                 <ProtectedRoute>
@@ -86,26 +88,26 @@ const App = () => (
 
             {/* just example route to check the pages */}
             <Route
-            path="/step-project"
-            element={
-              <ProtectedRoute>
-                <StepProject />
-              </ProtectedRoute>
-            }
+              path="/step-project"
+              element={
+                <ProtectedRoute>
+                  <StepProject />
+                </ProtectedRoute>
+              }
             />
 
             <Route
-            path="/step-integrations"
-            element={
-                  <ProtectedRoute>
+              path="/step-integrations"
+              element={
+                <ProtectedRoute>
                   <StepIntegrations />
                 </ProtectedRoute>
               }
             />
 
             <Route
-            path="/step-content"
-            element={
+              path="/step-content"
+              element={
                 <ProtectedRoute>
                   <StepContent />
                 </ProtectedRoute>
@@ -113,8 +115,8 @@ const App = () => (
             />
 
             <Route
-            path="/step-keywords"
-            element={
+              path="/step-keywords"
+              element={
                 <ProtectedRoute>
                   <StepKeywords />
                 </ProtectedRoute>
@@ -125,7 +127,9 @@ const App = () => (
               path="/keywords"
               element={
                 <ProtectedRoute>
-                   <PageWithSidebar><Keywords /></PageWithSidebar>
+                  <PageWithSidebar>
+                    <Keywords />
+                  </PageWithSidebar>
                 </ProtectedRoute>
               }
             />
@@ -134,7 +138,9 @@ const App = () => (
               path="/briefs"
               element={
                 <ProtectedRoute>
-                    <PageWithSidebar><Briefs /></PageWithSidebar>
+                  <PageWithSidebar>
+                    <Briefs />
+                  </PageWithSidebar>
                 </ProtectedRoute>
               }
             />
@@ -142,7 +148,9 @@ const App = () => (
               path="/briefs/:briefId/edit"
               element={
                 <ProtectedRoute>
-                    <PageWithSidebar><EditBrief /></PageWithSidebar>
+                  <PageWithSidebar>
+                    <EditBrief />
+                  </PageWithSidebar>
                 </ProtectedRoute>
               }
             />
@@ -150,7 +158,9 @@ const App = () => (
               path="/autopilot"
               element={
                 <ProtectedRoute>
-                   <PageWithSidebar><Autopilot /></PageWithSidebar>
+                  <PageWithSidebar>
+                    <Autopilot />
+                  </PageWithSidebar>
                 </ProtectedRoute>
               }
             />
@@ -158,7 +168,9 @@ const App = () => (
               path="/calendar"
               element={
                 <ProtectedRoute>
-                  <PageWithSidebar><Calendar /></PageWithSidebar>
+                  <PageWithSidebar>
+                    <Calendar />
+                  </PageWithSidebar>
                 </ProtectedRoute>
               }
             />
@@ -166,7 +178,9 @@ const App = () => (
               path="/integrations"
               element={
                 <ProtectedRoute>
-                  <PageWithSidebar><Integrations /></PageWithSidebar>
+                  <PageWithSidebar>
+                    <Integrations />
+                  </PageWithSidebar>
                 </ProtectedRoute>
               }
             />
@@ -174,7 +188,9 @@ const App = () => (
               path="/projects/new"
               element={
                 <ProtectedRoute>
-                   <PageWithSidebar><NewProject /></PageWithSidebar>
+                  <PageWithSidebar>
+                    <NewProject />
+                  </PageWithSidebar>
                 </ProtectedRoute>
               }
             />
@@ -182,7 +198,9 @@ const App = () => (
               path="/competitor-analysis"
               element={
                 <ProtectedRoute>
-                    <PageWithSidebar><Competitors /></PageWithSidebar>
+                  <PageWithSidebar>
+                    <Competitors />
+                  </PageWithSidebar>
                 </ProtectedRoute>
               }
             />

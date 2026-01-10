@@ -9,8 +9,7 @@ import {
   BarChart3,
   ChevronDown,
   Menu,
-  X,
-  Sparkles
+  X
 } from 'lucide-react';
 import logo from "../../public/logo2.jpeg"
 

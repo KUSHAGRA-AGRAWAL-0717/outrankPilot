@@ -1,7 +1,6 @@
 // Updated BlogPage.tsx - Exact Outrank.so Clone
 import React, { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft } from 'lucide-react';
 
 const BlogPage: React.FC = () => {
   const [posts, setPosts] = useState([]);

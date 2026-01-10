@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { toast } from 'sonner';
 
 interface ParsedContent {

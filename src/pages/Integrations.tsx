@@ -4,8 +4,6 @@ import {
   User,
   Key,
   Bell,
-  Save,
-  Check,
   Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
