@@ -12,7 +12,6 @@ import {
   Copy 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useApp } from '@/contexts/AppContext';
@@ -30,44 +29,79 @@ interface Brief {
   wp_post_id?: number;
 }
 
-export default function Briefs() {
-  const { currentProject } = useApp();
+// Add props interface
+interface BriefsProps {
+  projectId?: string | null;
+  onboardingMode?: boolean;
+  onBriefsCreated?: () => void;
+}
+
+export default function Briefs({ 
+  projectId: propProjectId, 
+  onboardingMode = false,
+  onBriefsCreated 
+}: BriefsProps = {}) {
+  const { currentProject, user } = useApp();
   const navigate = useNavigate();
+  
+  // Use propProjectId in onboarding mode, otherwise use currentProject
+  const effectiveProjectId = onboardingMode ? propProjectId : currentProject?.id;
+  
   const [briefs, setBriefs] = useState<Brief[]>([]);
   const [filter, setFilter] = useState<'all' | 'draft' | 'generated' | 'published'>('all');
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState<string | null>(null);
-const [projectWPDetails, setProjectWPDetails] = useState({
-  wp_url: '',
-  wp_username: '',
-  wp_app_password: ''
-});
+  const [projectWPDetails, setProjectWPDetails] = useState({
+    wp_url: '',
+    wp_username: '',
+    wp_app_password: ''
+  });
+  const [keywords, setKeywords] = useState<Array<{ id: string; keyword: string }>>([]);
+  const [generatingForKeyword, setGeneratingForKeyword] = useState<string | null>(null);
 
-// Add this useEffect to load project WP details when currentProject changes
-useEffect(() => {
-  if (currentProject) {
-
-    const {data, error} = supabase
-      .from('projects')
-      .select('wp_url, wp_username, wp_app_password')
-      .eq('id', currentProject.id)
-      .single()
-      .then(({data, error}) => {
-        if (error) {
-          console.error('Error fetching WP details:', error);
-          return;
-        }
-        setProjectWPDetails({
-          wp_url: data.wp_url || '',
-          wp_username: data.wp_username || '',
-          wp_app_password: data.wp_app_password || ''
+  // Load project WP details
+  useEffect(() => {
+    if (effectiveProjectId) {
+      supabase
+        .from('projects')
+        .select('wp_url, wp_username, wp_app_password')
+        .eq('id', effectiveProjectId)
+        .single()
+        .then(({data, error}) => {
+          if (error) {
+            console.error('Error fetching WP details:', error);
+            return;
+          }
+          setProjectWPDetails({
+            wp_url: data.wp_url || '',
+            wp_username: data.wp_username || '',
+            wp_app_password: data.wp_app_password || ''
+          });
         });
-      });
-  }
-}, [currentProject]);   
+    }
+  }, [effectiveProjectId]);
+
+  // Load keywords for onboarding mode
+  const loadKeywords = useCallback(async () => {
+    if (!effectiveProjectId || !onboardingMode) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('keywords')
+        .select('id, keyword, status')
+        .eq('project_id', effectiveProjectId)
+        .in('status', ['ready', 'generated'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setKeywords(data || []);
+    } catch (error) {
+      console.error('Error loading keywords:', error);
+    }
+  }, [effectiveProjectId, onboardingMode]);
 
   const loadBriefs = useCallback(async () => {
-    if (!currentProject) {
+    if (!effectiveProjectId) {
       setLoading(false);
       return;
     }
@@ -90,12 +124,12 @@ useEffect(() => {
           meta_description,
           keywords(keyword)
         `)
-        .eq('project_id', currentProject.id)
+        .eq('project_id', effectiveProjectId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      setBriefs(data?.map(b => ({
+      const mappedBriefs = data?.map(b => ({
         id: b.id,
         title: b.title,
         keyword: b.keywords?.keyword || 'Unknown',
@@ -105,7 +139,14 @@ useEffect(() => {
         content: b.content,
         wp_post_url: b.wp_post_url,
         wp_post_id: b.wp_post_id,
-      })) || []);
+      })) || [];
+
+      setBriefs(mappedBriefs);
+
+      // If in onboarding mode and briefs exist, trigger callback
+      if (onboardingMode && mappedBriefs.length > 0 && onBriefsCreated) {
+        onBriefsCreated();
+      }
     } catch (error) {
       console.error('Error loading briefs:', error);
       toast.error('Failed to load briefs');
@@ -113,44 +154,89 @@ useEffect(() => {
     } finally {
       setLoading(false);
     }
-  }, [currentProject]);
+  }, [effectiveProjectId, onboardingMode, onBriefsCreated]);
 
   useEffect(() => {
     loadBriefs();
-  }, [loadBriefs]);
+    if (onboardingMode) {
+      loadKeywords();
+    }
+  }, [loadBriefs, loadKeywords, onboardingMode]);
+
+  // Generate brief for a keyword
+  const handleGenerateBriefForKeyword = async (keywordId: string, keyword: string) => {
+    if (!effectiveProjectId || !user) {
+      toast.error('Missing project or user information');
+      return;
+    }
+
+    setGeneratingForKeyword(keywordId);
+    
+    try {
+      toast.success('Brief generation started for: ' + keyword);
+
+      const { error: functionError } = await supabase.functions.invoke(
+        'generate-brief',
+        {
+          body: {
+            keyword_id: keywordId,
+            keyword: keyword,
+            project_id: effectiveProjectId,
+            user_id: user.id,
+          },
+        }
+      );
+
+      if (functionError) {
+        console.error('Brief generation error:', functionError);
+        toast.error('Failed to generate brief');
+      } else {
+        // Wait a moment then reload briefs
+        setTimeout(() => {
+          loadBriefs();
+          toast.success('Brief generated successfully!');
+        }, 2000);
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Failed to start brief generation');
+    } finally {
+      setGeneratingForKeyword(null);
+    }
+  };
 
   const filteredBriefs = filter === 'all' 
     ? briefs 
     : briefs.filter(b => b.status === filter);
 
   const handlePublish = async (briefId: string) => {
-    if (!currentProject) {
+    if (!effectiveProjectId) {
       toast.error('Please select a project first');
       return;
     }
 
- if (!projectWPDetails.wp_url || !projectWPDetails.wp_username || !projectWPDetails.wp_app_password) {
-    toast.error('Please connect WordPress first in project settings');
-    return;
-  }
+    if (!projectWPDetails.wp_url || !projectWPDetails.wp_username || !projectWPDetails.wp_app_password) {
+      toast.error('Please connect WordPress first in project settings');
+      return;
+    }
+
     setPublishing(briefId);
     try {
-      const { error } = await supabase.from("job_logs").insert({
-        job_type: "publish",
-        status: "pending",
-        payload: { 
+      const { error: functionError } = await supabase.functions.invoke("publish-to-wordpress", {
+        body: { 
           briefId, 
-          projectId: currentProject.id,
+          projectId: effectiveProjectId,
           publishStatus: 'draft'
         }
       });
 
-      if (error) throw error;
+      if (functionError) throw functionError;
 
-      toast.success("✅ Publishing queued! Check back soon.");
+      toast.success("✅ Publishing to WordPress...");
+      setTimeout(() => loadBriefs(), 2000);
     } catch (error) {
-      console.error('Error queueing publish:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to queue publish');
+      console.error('Error publishing:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to publish');
     } finally {
       setPublishing(null);
     }
@@ -163,7 +249,7 @@ useEffect(() => {
   const handleCopyBrief = async (brief: Brief) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !currentProject) {
+      if (!user || !effectiveProjectId) {
         toast.error('Missing user or project');
         return;
       }
@@ -171,7 +257,7 @@ useEffect(() => {
       const { data: existingKeyword, error: checkError } = await supabase
         .from('keywords')
         .select('id')
-        .eq('project_id', currentProject.id)
+        .eq('project_id', effectiveProjectId)
         .eq('keyword', brief.keyword)
         .maybeSingle();
 
@@ -185,7 +271,7 @@ useEffect(() => {
         const { data: keywordData, error: keywordError } = await supabase
           .from('keywords')
           .insert({
-            project_id: currentProject.id,
+            project_id: effectiveProjectId,
             user_id: user.id,
             keyword: brief.keyword,
             status: 'ready'
@@ -200,7 +286,7 @@ useEffect(() => {
       const { data: newBrief, error: briefError } = await supabase
         .from('content_briefs')
         .insert({
-          project_id: currentProject.id,
+          project_id: effectiveProjectId,
           user_id: user.id,
           title: `${brief.title} (Copy)`,
           content: brief.content,
@@ -269,13 +355,102 @@ useEffect(() => {
 
   if (loading) {
     return (
-     
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-[#1B64F2]" />
-        </div>
-      
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-[#1B64F2]" />
+      </div>
     );
   }
+
+  // Onboarding Mode: Show keywords to generate briefs from
+  if (onboardingMode) {
+    return (
+      <div className="space-y-6">
+        <div className="text-sm text-[#5B6B8A] mb-4">
+          Select keywords to generate content briefs for:
+        </div>
+
+        {/* Keywords available for brief generation */}
+        {keywords.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="font-medium text-[#0B1F3B]">Available Keywords</h3>
+            <div className="space-y-2">
+              {keywords.map((kw) => {
+                const alreadyHasBrief = briefs.some(b => b.keyword === kw.keyword);
+                return (
+                  <div 
+                    key={kw.id}
+                    className="flex items-center justify-between p-4 bg-[#F6F8FC] rounded-lg border border-[#E5E7EB]"
+                  >
+                    <span className="font-medium text-[#0B1F3B]">{kw.keyword}</span>
+                    {alreadyHasBrief ? (
+                      <span className="text-xs text-[#10B981] flex items-center gap-1">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Brief Generated
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => handleGenerateBriefForKeyword(kw.id, kw.keyword)}
+                        disabled={generatingForKeyword === kw.id}
+                        className="bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] font-semibold"
+                      >
+                        {generatingForKeyword === kw.id ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin mr-2" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-3 w-3 mr-2" />
+                            Generate Brief
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Generated Briefs */}
+        {briefs.length > 0 && (
+          <div className="space-y-3 mt-6">
+            <h3 className="font-medium text-[#0B1F3B]">Generated Briefs ({briefs.length})</h3>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {briefs.map((brief) => (
+                <div 
+                  key={brief.id}
+                  className="flex items-center justify-between p-4 bg-white rounded-lg border border-[#E5E7EB]"
+                >
+                  <div>
+                    <div className="font-medium text-[#0B1F3B]">{brief.title}</div>
+                    <div className="text-xs text-[#5B6B8A] mt-1">
+                      {brief.wordCount} words • {brief.keyword}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getStatusIcon(brief.status)}
+                    <span className="text-xs text-[#5B6B8A] capitalize">{brief.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {keywords.length === 0 && (
+          <div className="text-center py-8 text-[#8A94B3]">
+            <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No keywords available for brief generation</p>
+            <p className="text-xs mt-1">Add keywords in the previous step</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
 
   return (
   

@@ -109,7 +109,7 @@ export default function ConnectWordPress({ onboardingMode = false, onConnected }
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 text-black">
             <Combobox value={language} onChange={setLanguage}>
               <div className="relative">
                 <Combobox.Input
@@ -159,9 +159,9 @@ export default function ConnectWordPress({ onboardingMode = false, onConnected }
             </Combobox>
           </div>
 
-          <Input placeholder="https://yoursite.com" className="text-black bg-white" value={wpUrl} onChange={(e) => setWpUrl(e.target.value)} />
-          <Input placeholder="Username" className="text-black bg-white" value={wpUsername} onChange={(e) => setWpUsername(e.target.value)} />
-          <Input type="password" placeholder="App Password" className="text-black bg-white" value={wpPassword} onChange={(e) => setWpPassword(e.target.value)} />
+          <Input placeholder="https://yoursite.com" className="text-white bg-white" value={wpUrl} onChange={(e) => setWpUrl(e.target.value)} />
+          <Input placeholder="Username" className="text-white bg-white" value={wpUsername} onChange={(e) => setWpUsername(e.target.value)} />
+          <Input type="password" placeholder="App Password" className="text-white bg-white" value={wpPassword} onChange={(e) => setWpPassword(e.target.value)} />
 
           <Button
             onClick={handleSave}

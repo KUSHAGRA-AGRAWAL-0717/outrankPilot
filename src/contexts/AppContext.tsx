@@ -118,21 +118,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+  // const signUp = async (email: string, password: string, fullName?: string) => {
+  //   const redirectUrl = `${window.location.origin}/`;
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName || email.split('@')[0],
-        },
-      },
-    });
-    return { error };
-  };
+  //   const { error } = await supabase.auth.signUp({
+  //     email,
+  //     password,
+  //     options: {
+  //       emailRedirectTo: redirectUrl,
+  //       data: {
+  //         full_name: fullName || email.split('@')[0],
+  //       },
+  //     },
+  //   });
+  //   return { error };
+  // };
+
+  const signUp = async (email: string, password: string, fullName: string) => {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${window.location.origin}/auth/callback`,
+      data: {
+        full_name: fullName,
+      }
+    }
+  });
+  
+  return { data, error };
+};
+
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

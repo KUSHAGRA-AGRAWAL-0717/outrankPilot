@@ -22,7 +22,7 @@ const tabs = [
   { id: "Integrations", label: "Integrations", icon: Globe },
   { id: "account", label: "Account", icon: User },
   { id: "api", label: "API Keys", icon: Key },
-  { id: "notifications", label: "Notifications", icon: Bell }
+  { id: "wordpress", label: "WordPress", icon: Bell }
 ];
 
 export default function Settings() {
@@ -202,6 +202,32 @@ export default function Settings() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+          {activeTab === "wordpress" && (
+            <div className="flex-1 p-8 rounded-xl border border-[#8A94B3]/30 bg-white shadow-sm">
+              <h2 className="text-xl font-bold text-[#0B1F3B] mb-6">WordPress Integration</h2>
+              <ConnectWordPress
+                wpUrl={wpUrl}
+                setWpUrl={setWpUrl}
+                wpUsername={wpUsername}
+                setWpUsername={setWpUsername}
+                wpPassword={wpPassword}
+                setWpPassword={setWpPassword}
+                connected={connected}
+                onSave={handleSaveWordPress}
+                onDisconnect={handleDisconnect}
+                saving={saving}
+                language={language}
+                setLanguage={setLanguage}
+                country={country}
+                setCountry={setCountry}
+                filteredLanguages={filteredLanguages}
+                langQuery={langQuery}
+                setLangQuery={setLangQuery}
+                filteredCountries={filteredCountries}
+                countryQuery={countryQuery}
+              />
             </div>
           )}
         </div>

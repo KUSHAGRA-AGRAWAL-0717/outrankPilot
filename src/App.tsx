@@ -26,7 +26,7 @@ import AuthNotionCallback from "./pages/AuthNotionCallback";
 import Autopilot from "./pages/Autopilot.js";
 import AdminGuard from "@/components/AdminGuard";
 import AdminPage from "./pages/AdminPage";
-import Onboarding from "././pages/Onboarding.jsx";
+import Onboarding from "./pages/Onboarding.js";
 
 // import StepIntegrations from "./pages/FilesBoard/StepIntegrations.js";
 // import StepContent from "./pages/FilesBoard/StepBlogsArticles.js";

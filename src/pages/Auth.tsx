@@ -65,52 +65,76 @@ export default function Auth() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email || !password) {
-      toast.error('Please fill in all fields');
-      return;
-    }
+  e.preventDefault();
+  
+  if (!email || !password) {
+    toast.error('Please fill in all fields');
+    return;
+  }
 
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
+  if (password.length < 6) {
+    toast.error('Password must be at least 6 characters');
+    return;
+  }
 
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            toast.error('Invalid email or password');
-          } else {
-            toast.error(error.message);
-          }
+  try {
+    if (isLogin) {
+      const { error } = await signIn(email, password);
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Invalid email or password');
+        } else if (error.message.includes('Email not confirmed')) {
+          toast.error('Please verify your email before signing in. Check your inbox.');
         } else {
-          toast.success('Welcome back!');
-          navigate('/onboarding');
+          toast.error(error.message);
         }
       } else {
-        const { error } = await signUp(email, password, fullName);
-        if (error) {
-          if (error.message.includes('already registered')) {
-            toast.error('This email is already registered. Please sign in instead.');
-          } else {
-            toast.error(error.message);
+        toast.success('Welcome back!');
+        navigate('/onboarding');
+      }
+    } else {
+      // Updated signup with emailRedirectTo option
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            full_name: fullName,
           }
+        }
+      });
+      
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast.error('This email is already registered. Please sign in instead.');
         } else {
+          toast.error(error.message);
+        }
+      } else {
+        // Check if email confirmation is required
+        if (data?.user && !data?.session) {
+          toast.success('Account created! Please check your email to confirm your account.');
+          // Optionally show a message to the user
+          setEmail('');
+          setPassword('');
+          setFullName('');
+        } else {
+          // Auto-confirm is enabled (no email verification needed)
           toast.success('Account created successfully!');
           navigate('/onboarding');
         }
       }
-    } catch (err) {
-      toast.error('An unexpected error occurred');
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (err) {
+    toast.error('An unexpected error occurred');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleForgotPassword = async () => {
     if (!resetEmail && !email) {

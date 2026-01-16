@@ -2,19 +2,69 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Link, Zap, CheckCircle, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import ConnectNotion from "../../components/ConnectNotion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ConnectWordPress from "../../components/ConnectWordPress";
 
-export default function StepIntegrations({ projectId, onNext, onPrev }) {
+interface StepIntegrationsProps {
+  projectId: string | null;
+  onNext: () => void;
+  onPrev: () => void;
+}
+
+export default function StepIntegrations({ 
+  projectId, 
+  onNext, 
+  onPrev 
+}: StepIntegrationsProps) {
   const navigate = useNavigate();
   const [notionConnected, setNotionConnected] = useState(false);
+  const [skipping, setSkipping] = useState(false);
+
+  const handleSkip = async () => {
+    setSkipping(true);
+    
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        toast.error("Authentication error");
+        return;
+      }
+
+      // Mark onboarding as complete
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ 
+          onboarding_completed: true,
+          onboarding_step: 4
+        })
+        .eq("id", user.id);
+
+      if (updateError) {
+        console.error("Error completing onboarding:", updateError);
+        toast.error("Failed to complete onboarding");
+        return;
+      }
+
+      toast.success("🎉 Setup skipped! You can connect integrations later.");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Skip error:", error);
+      toast.error("An error occurred");
+    } finally {
+      setSkipping(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-10">
       <div className="text-center space-y-6">
         <div className="mx-auto w-20 h-20 bg-gradient-to-br from-[#1B64F2] to-[#3EF0C1] rounded-2xl flex items-center justify-center shadow-lg">
-          <Zap className="w-10 h-10 text-black" />
+          <Zap className="w-10 h-10 text-white" />
         </div>
         <div>
           <h1 className="text-4xl md:text-5xl font-bold text-[#0B1F3B] mb-4 leading-tight">
@@ -64,8 +114,11 @@ export default function StepIntegrations({ projectId, onNext, onPrev }) {
           </CardHeader>
           <CardContent className="pt-6">
             <ConnectWordPress 
+              projectId={projectId}
               onboardingMode={true}
-              onConnected={() => console.log("WP Connected")}
+              onConnected={() => {
+                toast.success("WordPress connected!");
+              }}
             />
           </CardContent>
         </Card>
@@ -86,15 +139,16 @@ export default function StepIntegrations({ projectId, onNext, onPrev }) {
       <div className="flex flex-col sm:flex-row gap-4 pt-6">
         <Button 
           variant="outline"
-          onClick={() => navigate("/dashboard")}
+          onClick={handleSkip}
+          disabled={skipping}
           className="flex-1 font-semibold py-6 text-base border-2 border-[#E5E7EB] hover:border-[#1B64F2] hover:bg-[#1B64F2]/5 text-[#0B1F3B] rounded-xl"
         >
-          Skip for Now
+          {skipping ? "Completing..." : "Skip for Now"}
         </Button>
         <Button 
           onClick={onNext}
           size="lg"
-          className="flex-1 bg-[#1B64F2] hover:bg-[#1246C9] text-black font-semibold py-6 text-base shadow-lg hover:shadow-xl rounded-xl"
+          className="flex-1 bg-[#1B64F2] hover:bg-[#1246C9] text-white font-semibold py-6 text-base shadow-lg hover:shadow-xl rounded-xl"
         >
           Complete Setup
           <ArrowRight className="w-5 h-5 ml-2" />

@@ -9,7 +9,9 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
 
   try {
     const { domain, project_id, user_id } = await req.json();
@@ -23,18 +25,58 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    console.log(`Analyzing competitor: ${domain}`);
+
     // 1️⃣ Get competitor SERP results
     const serpResponse = await fetch(
-      `https://serpapi.com/search.json?engine=google&q=site:${domain}&api_key=${Deno.env.get("SERP_API_KEY")}`
+      `https://serpapi.com/search.json?engine=google&q=site:${domain}&num=100&api_key=${Deno.env.get("SERP_API_KEY")}`
     );
-    if (!serpResponse.ok) throw new Error(`SERP API failed: ${serpResponse.status}`);
+    
+    if (!serpResponse.ok) {
+      throw new Error(`SERP API failed: ${serpResponse.status}`);
+    }
+    
     const serp = await serpResponse.json();
     const organics = serp.organic_results || [];
-    const topOrganics = organics.slice(0, 10).map((r: any) => r.link);
-    const sharedKeywords = organics.slice(0, 20).map((r: any) => r.title).filter(Boolean);
-    const trafficEstimate = organics.reduce((sum: number, r: any) => sum + (r.position ? 100 / r.position : 0), 0);
+    
+    // Extract top organic URLs
+    const topOrganics = organics
+      .slice(0, 20)
+      .map((r: any) => ({
+        url: r.link,
+        title: r.title,
+        position: r.position,
+      }));
+    
+    // Extract shared keywords from titles
+    const sharedKeywords = organics
+      .slice(0, 30)
+      .map((r: any) => r.title)
+      .filter(Boolean);
+    
+    // Calculate traffic estimate based on positions
+    const trafficEstimate = organics.reduce(
+      (sum: number, r: any) => {
+        const position = r.position || 100;
+        // CTR-based estimate: position 1 = ~30%, position 10 = ~2%
+        const ctr = position <= 10 
+          ? Math.max(2, 30 - (position - 1) * 3) 
+          : 1;
+        return sum + ctr * 10; // Multiply by average search volume factor
+      }, 
+      0
+    );
 
-    // 2️⃣ AI-based GAP extraction (with JSON mode for reliability)
+    // 2️⃣ Get backlink data (optional - if you have a backlink API)
+    let backlinkCount = 0;
+    let referringDomains = 0;
+    
+    // Example: If you use Ahrefs or Moz API
+    // const backlinkData = await fetchBacklinkData(domain);
+    // backlinkCount = backlinkData.total;
+    // referringDomains = backlinkData.referring_domains;
+
+    // 3️⃣ AI-based keyword gap extraction
     const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -43,69 +85,116 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        response_format: { type: "json_object" },  // ✅ Enforces JSON
+        response_format: { type: "json_object" },
         messages: [
           {
             role: "system",
-            content: `You are a SEO expert. Analyze competitor titles and respond ONLY with this exact JSON format: {"gaps": ["gap keyword 1", "gap keyword 2"]}. No other text, explanations, or markdown. Extract 10-20 content gap keywords that the domain ${domain} ranks for but the user could target.`
+            content: `You are an SEO competitor analysis expert. Analyze the following page titles from ${domain} and extract 15-20 high-value keyword opportunities that represent content gaps.
+
+Focus on:
+- Informational keywords (how-to, guide, tutorial)
+- Commercial keywords (best, top, review, vs)
+- Long-tail opportunities
+- Question-based queries
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "gaps": ["keyword 1", "keyword 2", "keyword 3", ...]
+}
+
+No explanations, no markdown, just the JSON object.`
           },
           {
             role: "user",
-            content: `Titles from ${domain}: ${sharedKeywords.join(", ")}. Extract gaps as JSON array.`
+            content: `Page titles from ${domain}:\n${sharedKeywords.slice(0, 30).join("\n")}`
           }
         ],
+        temperature: 0.3,
       }),
     });
 
-    if (!aiResponse.ok) throw new Error(`OpenAI failed: ${aiResponse.status}`);
+    if (!aiResponse.ok) {
+      throw new Error(`OpenAI failed: ${aiResponse.status}`);
+    }
+    
     const ai = await aiResponse.json();
+    
     if (!ai.choices?.[0]?.message?.content) {
       throw new Error("OpenAI returned no content");
     }
 
-    // ✅ Robust JSON extraction & parsing
+    // Parse AI response with robust error handling
     let gaps: string[] = [];
     const content = ai.choices[0].message.content.trim();
 
-    // Strip all possible markdown wrappers (multiple times for safety)
+    // Clean markdown wrappers
     let cleaned = content
       .replace(/^```json\s*\n?/, '')
       .replace(/\n?```\s*$/, '')
       .replace(/^```\s*\n?/, '')
       .replace(/\n?```\s*$/, '')
-      .replace(/^json\s*\n?/, '')  // ✅ Fix for "json\n[" error
-      .replace(/\n?```\s*$/, '')
+      .replace(/^json\s*\n?/, '')
       .trim();
 
-    // If still object-wrapped (common with json_object), extract 'gaps' array
-    let parsed;
     try {
-      parsed = JSON.parse(cleaned);
+      const parsed = JSON.parse(cleaned);
       gaps = Array.isArray(parsed) ? parsed : (parsed.gaps || []);
     } catch (parseErr) {
-      console.error("Parse failed, raw content:", cleaned);  // Log for debug
-      gaps = [];  // Fallback empty
+      console.error("JSON parse error. Raw content:", cleaned);
+      gaps = [];
     }
 
-    if (!Array.isArray(gaps)) gaps = [];
+    if (!Array.isArray(gaps)) {
+      gaps = [];
+    }
 
-    // 3️⃣ Store result in DB
-    const { error: dbError } = await supabase.from("competitors").insert({
-      user_id,
-      project_id,
-      domain,
-      top_organics: topOrganics,
-      shared_keywords: sharedKeywords,
-      gaps: gaps.slice(0, 15),
-      traffic_estimate: Math.round(trafficEstimate),
-    });
+    // Filter and clean gaps
+    gaps = gaps
+      .filter((gap: string) => gap && gap.length > 3 && gap.length < 100)
+      .slice(0, 20);
+
+    console.log(`Found ${gaps.length} keyword gaps for ${domain}`);
+
+    // 4️⃣ Store comprehensive competitor data
+    const { data: competitorData, error: dbError } = await supabase
+      .from("competitors")
+      .insert({
+        user_id,
+        project_id,
+        domain,
+        top_organics: topOrganics,
+        shared_keywords: sharedKeywords.slice(0, 30),
+        gaps: gaps,
+        traffic_estimate: Math.round(trafficEstimate),
+        // backlink_count: backlinkCount,
+        // referring_domains: referringDomains,
+        // gaps_added: false,
+      })
+      .select()
+      .single();
 
     if (dbError) throw dbError;
 
-    return new Response(JSON.stringify({ success: true, gaps: gaps.slice(0, 3) }), { status: 200, headers: corsHeaders });
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        competitor: competitorData,
+        gaps: gaps.slice(0, 5),
+        stats: {
+          traffic_estimate: Math.round(trafficEstimate),
+          shared_keywords: sharedKeywords.length,
+          top_pages: topOrganics.length,
+          keyword_gaps: gaps.length,
+        }
+      }), 
+      { status: 200, headers: corsHeaders }
+    );
 
   } catch (error: any) {
-    console.error("Edge function error:", error);  // ✅ Deno logs to Supabase dashboard
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
+    console.error("Competitor analysis error:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }), 
+      { status: 500, headers: corsHeaders }
+    );
   }
 });

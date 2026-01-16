@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const NOTION_API_VERSION = "2022-06-28";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -19,7 +21,15 @@ serve(async (req) => {
 
     console.log("🚀 Autopilot cycle started:", new Date().toISOString());
 
-    // 1️⃣ Fetch autopilot-enabled projects
+    // Get current UTC time
+    const now = new Date();
+    const currentHour = now.getUTCHours();
+    const currentMinute = now.getUTCMinutes();
+    const currentTime = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
+    
+    console.log(`Current UTC time: ${currentTime}`);
+
+    // 1️⃣ Fetch autopilot-enabled projects matching current hour
     const { data: projects, error: projectsError } = await supabase
       .from("projects")
       .select(`
@@ -27,10 +37,12 @@ serve(async (req) => {
         user_id, 
         paused, 
         daily_publish_limit,
+        autopilot_time,
         wp_url,
         wp_username,
         wp_app_password,
-        notion_database_id
+        notion_database_id,
+        notion_token
       `)
       .eq("autopilot_enabled", true)
       .eq("paused", false);
@@ -51,52 +63,64 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Found ${projects.length} autopilot-enabled projects`);
+    // Filter projects that should run now (matching hour from autopilot_time)
+    const activeProjects = projects.filter(project => {
+      const [projectHour] = (project.autopilot_time || "09:00").split(":");
+      return parseInt(projectHour) === currentHour;
+    });
+
+    console.log(`Found ${activeProjects.length} projects scheduled for hour ${currentHour}`);
 
     const results = [];
     const today = new Date().toISOString().split('T')[0];
 
-    for (const project of projects) {
+    for (const project of activeProjects) {
       try {
         // 2️⃣ Check daily publish limit
         const { count: publishedToday } = await supabase
           .from("content_briefs")
           .select("*", { count: "exact", head: true })
           .eq("project_id", project.id)
-          .eq("publish_status", "published")
+          .eq("status", "published")
           .gte("published_at", today);
 
-        if ((publishedToday ?? 0) >= (project.daily_publish_limit || 1)) {
+        const remaining = (project.daily_publish_limit || 1) - (publishedToday ?? 0);
+
+        if (remaining <= 0) {
           console.log(`⏭️ Daily limit reached for project ${project.id} (${publishedToday}/${project.daily_publish_limit})`);
           results.push({
             projectId: project.id,
             status: "skipped",
-            reason: "Daily limit reached"
+            reason: "Daily limit reached",
+            published: publishedToday,
+            limit: project.daily_publish_limit
           });
           continue;
         }
 
+        console.log(`Project ${project.id}: ${remaining} briefs remaining today`);
+
         // 3️⃣ Check if WordPress OR Notion is configured
         const hasWordPress = !!(project.wp_url && project.wp_username && project.wp_app_password);
-        const hasNotion = !!project.notion_database_id;
+        const hasNotion = !!(project.notion_database_id && project.notion_token);
 
         if (!hasWordPress && !hasNotion) {
           console.log(`⚠️ No publishing targets configured for project ${project.id}`);
           results.push({
             projectId: project.id,
-            status: "skipped",
+            status: "error",
             reason: "No WordPress or Notion configured"
           });
           continue;
         }
 
-        // 4️⃣ Find generated briefs (not yet published)
+        // 4️⃣ Find ONE generated brief (status='generated')
         const { data: briefs, error: briefsError } = await supabase
           .from("content_briefs")
-          .select("id, title, content, meta_description, user_id")
+          .select("id, title, content, meta_description, outline")
           .eq("project_id", project.id)
           .eq("status", "generated")
-          .is("publish_status", null)
+          .order("created_at", { ascending: true })
           .limit(1);
 
         if (briefsError) {
@@ -104,11 +128,11 @@ serve(async (req) => {
         }
 
         if (!briefs || briefs.length === 0) {
-          console.log(`📭 No unpublished briefs for project ${project.id}`);
+          console.log(`📭 No generated briefs for project ${project.id}`);
           results.push({
             projectId: project.id,
-            status: "skipped",
-            reason: "No unpublished briefs"
+            status: "completed",
+            reason: "No more generated briefs to publish"
           });
           continue;
         }
@@ -117,26 +141,40 @@ serve(async (req) => {
         console.log(`📝 Publishing brief "${brief.title}" (${brief.id}) for project ${project.id}`);
 
         // 5️⃣ Parse content
-        let content = brief.content;
-        let metaDescription = brief.meta_description;
+        let parsedContent: any = {};
+        try {
+          parsedContent = typeof brief.content === "string" 
+            ? JSON.parse(brief.content) 
+            : brief.content;
+        } catch (e) {
+          console.error("Failed to parse content:", e);
+        }
 
-        if (typeof content === "string") {
-          try {
-            const parsed = JSON.parse(content);
-            if (parsed.outline) {
-              content = parsed.outline
-                .map((section: any) => {
-                  const tag = section.type || "h2";
-                  return `<${tag}>${section.heading}</${tag}>\n<p>${section.notes || ""}</p>`;
-                })
-                .join("\n");
-            }
-            if (parsed.metaDescription) {
-              metaDescription = parsed.metaDescription;
-            }
-          } catch (e) {
-            // Use content as-is
+        // Parse outline
+        let outline = [];
+        try {
+          if (parsedContent.outline) {
+            outline = typeof parsedContent.outline === 'string' 
+              ? JSON.parse(parsedContent.outline) 
+              : parsedContent.outline;
+          } else if (brief.outline) {
+            outline = typeof brief.outline === 'string'
+              ? JSON.parse(brief.outline)
+              : brief.outline;
           }
+        } catch (e) {
+          console.error("Failed to parse outline:", e);
+        }
+
+        const metaDescription = parsedContent.metaDescription || parsedContent.meta_description || brief.meta_description;
+
+        // Build HTML content from outline
+        let htmlContent = "";
+        if (Array.isArray(outline) && outline.length > 0) {
+          htmlContent = outline.map((section: any) => {
+            const tag = section.type || "h2";
+            return `<${tag}>${section.heading || ""}</${tag}>\n<p>${section.notes || ""}</p>`;
+          }).join("\n");
         }
 
         const publishResults: any = {};
@@ -157,7 +195,7 @@ serve(async (req) => {
               },
               body: JSON.stringify({
                 title: brief.title,
-                content: content || "",
+                content: htmlContent || "",
                 status: "draft",
                 excerpt: metaDescription || "",
               }),
@@ -175,7 +213,6 @@ serve(async (req) => {
               postUrl: wpPost.link
             };
 
-            // Update brief with WordPress info
             await supabase
               .from("content_briefs")
               .update({
@@ -199,77 +236,75 @@ serve(async (req) => {
           try {
             console.log(`📤 Publishing to Notion for project ${project.id}`);
 
-            // Get Notion account
-            const { data: notionAccount } = await supabase
-              .from("notion_accounts")
-              .select("access_token")
-              .eq("user_id", project.user_id)
-              .single();
-
-            if (!notionAccount) {
-              throw new Error("Notion account not found");
+            const blocks = [];
+            
+            if (metaDescription) {
+              blocks.push({
+                object: "block",
+                type: "callout",
+                callout: {
+                  icon: { type: "emoji", emoji: "📝" },
+                  rich_text: [{
+                    type: "text",
+                    text: { content: String(metaDescription).substring(0, 2000) },
+                  }],
+                  color: "blue_background",
+                },
+              });
             }
 
-            // Prepare content blocks
-            const contentBlocks = [];
-            
-            contentBlocks.push({
-              object: "block",
-              type: "heading_1",
-              heading_1: {
-                rich_text: [{ text: { content: brief.title || "Untitled" } }],
-              },
-            });
+            if (Array.isArray(outline) && outline.length > 0) {
+              for (const section of outline.slice(0, 50)) {
+                if (!section || !section.heading) continue;
+                
+                const headingType = section.type === "h1" ? "heading_1" : 
+                                   section.type === "h2" ? "heading_2" : "heading_3";
+                
+                blocks.push({
+                  object: "block",
+                  type: headingType,
+                  [headingType]: {
+                    rich_text: [{
+                      type: "text",
+                      text: { content: String(section.heading).substring(0, 2000) },
+                    }],
+                  },
+                });
 
-            const textContent = typeof content === "string" ? content : JSON.stringify(content);
-            const paragraphs = textContent.split("\n\n").filter(p => p.trim());
-            
-            for (const para of paragraphs.slice(0, 50)) {
-              if (para.length > 2000) {
-                const chunks = para.match(/.{1,2000}/g) || [];
-                chunks.forEach(chunk => {
-                  contentBlocks.push({
+                if (section.notes) {
+                  blocks.push({
                     object: "block",
                     type: "paragraph",
                     paragraph: {
-                      rich_text: [{ text: { content: chunk } }],
+                      rich_text: [{
+                        type: "text",
+                        text: { content: String(section.notes).substring(0, 2000) },
+                      }],
                     },
                   });
-                });
-              } else {
-                contentBlocks.push({
-                  object: "block",
-                  type: "paragraph",
-                  paragraph: {
-                    rich_text: [{ text: { content: para } }],
-                  },
-                });
+                }
               }
             }
 
-            // Create Notion page
             const notionPayload = {
-              parent: { database_id: project.notion_database_id },
+              parent: { 
+                type: "database_id",
+                database_id: project.notion_database_id 
+              },
               properties: {
                 "Name": {
                   title: [{ text: { content: brief.title || "Untitled" } }],
                 },
               },
-              children: contentBlocks,
+              children: blocks.slice(0, 100),
             };
-
-            if (publishResults.wordpress?.postUrl) {
-              notionPayload.properties["URL"] = {
-                url: publishResults.wordpress.postUrl,
-              };
-            }
 
             const notionResponse = await fetch("https://api.notion.com/v1/pages", {
               method: "POST",
               headers: {
-                "Authorization": `Bearer ${notionAccount.access_token}`,
+                "Authorization": `Bearer ${project.notion_token}`,
                 "Content-Type": "application/json",
-                "Notion-Version": "2022-06-28",
+                "Notion-Version": NOTION_API_VERSION,
               },
               body: JSON.stringify(notionPayload),
             });
@@ -286,11 +321,11 @@ serve(async (req) => {
               pageUrl: notionPage.url
             };
 
-            // Update brief with Notion info
             await supabase
               .from("content_briefs")
               .update({
                 notion_page_id: notionPage.id,
+                notion_database_id: project.notion_database_id,
               })
               .eq("id", brief.id);
 
@@ -304,7 +339,7 @@ serve(async (req) => {
           }
         }
 
-        // 8️⃣ Update brief status
+        // 8️⃣ Update brief status to "published"
         const publishSuccess = 
           (publishResults.wordpress?.success || !hasWordPress) &&
           (publishResults.notion?.success || !hasNotion);
@@ -312,7 +347,7 @@ serve(async (req) => {
         await supabase
           .from("content_briefs")
           .update({
-            publish_status: publishSuccess ? "published" : "failed",
+            status: publishSuccess ? "published" : "generated",
             published_at: publishSuccess ? new Date().toISOString() : null,
           })
           .eq("id", brief.id);
@@ -320,7 +355,9 @@ serve(async (req) => {
         results.push({
           projectId: project.id,
           briefId: brief.id,
+          briefTitle: brief.title,
           status: publishSuccess ? "published" : "partial",
+          remaining: remaining - 1,
           ...publishResults
         });
 
@@ -343,6 +380,7 @@ serve(async (req) => {
         success: true,
         processed: results.length,
         timestamp: new Date().toISOString(),
+        currentTime: currentTime,
         results,
       }),
       {
