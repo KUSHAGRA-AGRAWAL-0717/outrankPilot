@@ -120,7 +120,7 @@ const isLoading = propLoading || localLoading
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-[#0B1F3B]">Project Name</label>
+              <label className="text-sm font-medium text-white">Project Name</label>
               <Input
                 placeholder="My Awesome Blog"
                 value={name}
@@ -131,12 +131,12 @@ const isLoading = propLoading || localLoading
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-[#0B1F3B]">Business Name</label>
+              <label className="text-sm font-medium text-white">Business Name</label>
               <Input
                 placeholder="https://www.myawesomeblog.com"
                 value={business_url}
                 onChange={(e) => setBusinessUrl(e.target.value)}
-                className="h-12 border-[#8A94B3]/30 focus:ring-2 focus:ring-[#1B64F2]"
+                className="h-12 border-[#8A94B3]/30 focus:ring-2 focus:ring-[#1B64F2] text-white"
               />
               <p className="text-xs text-[#8A94B3]">
                 Enter your full business URL including http:// or https://
