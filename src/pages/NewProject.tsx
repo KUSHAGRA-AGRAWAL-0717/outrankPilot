@@ -126,7 +126,7 @@ const isLoading = propLoading || localLoading
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="h-12 border-[#8A94B3]/30 focus:ring-2 focus:ring-[#1B64F2]"
+                className="h-12 border-[#8A94B3]/30 focus:ring-2 focus:ring-[#1B64F2] text-white"
               />
             </div>
 
