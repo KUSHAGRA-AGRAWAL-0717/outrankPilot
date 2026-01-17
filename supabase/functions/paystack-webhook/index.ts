@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createHmac } from "https://deno.land/std@0.177.0/node/crypto.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,7 +9,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -16,47 +16,128 @@ serve(async (req) => {
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")! // Use Service Role to bypass RLS
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const body = await req.json();
+    const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
+    const signature = req.headers.get("x-paystack-signature");
+    
+    const bodyText = await req.text();
+    const body = JSON.parse(bodyText);
 
-    // 1. Check if the event is a successful payment
+    // Verify webhook signature
+    const hash = createHmac("sha512", PAYSTACK_SECRET_KEY!)
+      .update(bodyText)
+      .digest("hex");
+    
+    if (hash !== signature) {
+      throw new Error("Invalid webhook signature");
+    }
+
+    // Handle successful payment
     if (body.event === "charge.success") {
-      const { user_id, planId } = body.data.metadata;
+      const { user_id, planId, trial_period } = body.data.metadata;
       const reference = body.data.reference;
       const customer_code = body.data.customer.customer_code;
+      const authorization_code = body.data.authorization.authorization_code;
 
-      // 2. Define plan limits based on what was purchased
+      // Define plan limits based on your image
       const PLAN_LIMITS = {
-        pro: { keywords: 200, projects: 5, articles: 50 },
-        agency: { keywords: 1000, projects: 20, articles: 300 },
+        essential: { 
+          keywords: 500, 
+          projects: 3, 
+          articles: 30, 
+          wpSites: 1,
+          autoPublish: false,
+          aiImages: true,
+          languagesLimit: 150
+        },
+        grow: { 
+          keywords: 2000, 
+          projects: 10, 
+          articles: 60, 
+          wpSites: 3,
+          autoPublish: true,
+          aiImages: true,
+          languagesLimit: 150
+        },
+        premium: { 
+          keywords: 999999, 
+          projects: 9999, 
+          articles: -1, 
+          wpSites: -1,
+          autoPublish: true,
+          aiImages: true,
+          languagesLimit: 150
+        },
       };
 
       const limits = PLAN_LIMITS[planId as keyof typeof PLAN_LIMITS];
 
-      // 3. Update the subscriptions table
+      const now = new Date();
+      const subscriptionEnd = new Date(now);
+      subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1);
+
+      // Update subscription
       const { error } = await supabase
         .from("subscriptions")
         .update({
           plan: planId,
           status: "active",
-          paystack_customer_id: customer_code, // Renamed from stripe_customer_id
-          paystack_reference: reference,      // Renamed from stripe_subscription_id
+          paystack_customer_id: customer_code,
+          paystack_reference: reference,
+          subscription_start_at: now.toISOString(),
+          subscription_end_at: subscriptionEnd.toISOString(),
           keywords_limit: limits?.keywords || 5,
           projects_limit: limits?.projects || 1,
           articles_limit: limits?.articles || 3,
+          auto_publish: limits?.autoPublish || false,
+          ai_images: limits?.aiImages || false,
+          languages_limit: limits?.languagesLimit || 1,
         })
         .eq("user_id", user_id);
 
       if (error) throw error;
 
-      // 4. Log the action (Audit Log)
+      // Create Paystack subscription for recurring billing if trial ended
+      if (!trial_period) {
+        // You'll need to create a plan on Paystack dashboard first
+        // Then use the plan code here
+        const planCode = `PLN_${planId}`; // Replace with actual Paystack plan codes
+        
+        await fetch("https://api.paystack.co/subscription", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            customer: customer_code,
+            plan: planCode,
+            authorization: authorization_code,
+          }),
+        });
+      }
+
+      // Log the action
       await supabase.from("audit_logs").insert({
         action: "PAYSTACK_PAYMENT_SUCCESS",
         target_id: user_id,
-        payload: { plan: planId, ref: reference }
+        payload: { plan: planId, ref: reference, trial: trial_period }
       });
+    }
+
+    // Handle subscription cancellation
+    if (body.event === "subscription.disable") {
+      const customer_code = body.data.customer.customer_code;
+      
+      await supabase
+        .from("subscriptions")
+        .update({
+          status: "canceled",
+          subscription_end_at: new Date().toISOString(),
+        })
+        .eq("paystack_customer_id", customer_code);
     }
 
     return new Response(JSON.stringify({ message: "Webhook processed" }), {
@@ -64,7 +145,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-  } catch (err) {
+  } catch (err: any) {
     console.error("Webhook Error:", err.message);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Check, Zap, Building2, Sparkles } from "lucide-react";
+import { Check, Zap, Building2, Sparkles, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const BASE_PLANS = [
   {
@@ -18,9 +19,18 @@ const BASE_PLANS = [
       "1 WordPress site",
       "AI-generated images",
       "YouTube video integration",
-      "150+ languages"
+      "150+ languages",
+      "30 SEO-optimized articles monthly"
     ],
-    limits: { projects: 3, keywords: 500, articles: 30, wpSites: 1 }
+    limits: { 
+      projects: 3, 
+      keywords: 500, 
+      articles: 30, 
+      wpSites: 1,
+      autoPublish: false,
+      aiImages: true,
+      languagesLimit: 150
+    }
   },
   {
     id: "grow",
@@ -35,9 +45,18 @@ const BASE_PLANS = [
       "High DR backlinks",
       "3 WordPress sites",
       "Daily auto-publishing",
-      "Backlink Exchange"
+      "Backlink Exchange",
+      "60 articles auto-published monthly"
     ],
-    limits: { projects: 10, keywords: 2000, articles: 60, wpSites: 3 }
+    limits: { 
+      projects: 10, 
+      keywords: 2000, 
+      articles: 60, 
+      wpSites: 3,
+      autoPublish: true,
+      aiImages: true,
+      languagesLimit: 150
+    }
   },
   {
     id: "premium",
@@ -51,20 +70,50 @@ const BASE_PLANS = [
       "Unlimited AI articles",
       "Ghost, Webflow, Notion, Wix, Shopify integrations",
       "Webhook support",
+      "Frame integration",
       "Priority feature requests",
       "Unlimited WordPress sites"
     ],
-    limits: { projects: 9999, keywords: 999999, articles: -1, wpSites: -1 }
+    limits: { 
+      projects: 9999, 
+      keywords: 999999, 
+      articles: -1, 
+      wpSites: -1,
+      autoPublish: true,
+      aiImages: true,
+      languagesLimit: 150
+    }
   }
 ];
 
 export default function PlanMatrix() {
   const [loading, setLoading] = useState(null);
   const [currency, setCurrency] = useState({ code: "USD", rate: 1 });
+  const [user, setUser] = useState(null);
+  const [currentSubscription, setCurrentSubscription] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const locale = navigator.language || "en-US";
+    checkUser();
+    detectCurrency();
+  }, []);
 
+  const checkUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
+    
+    if (user) {
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+      setCurrentSubscription(data);
+    }
+  };
+
+  const detectCurrency = () => {
+    const locale = navigator.language || "en-US";
     if (locale.includes("en-IN") || locale.includes("hi-IN")) {
       setCurrency({ code: "INR", rate: 83 });
     } else if (locale.includes("en-GH") || locale.includes("ak-GH")) {
@@ -72,7 +121,7 @@ export default function PlanMatrix() {
     } else {
       setCurrency({ code: "USD", rate: 1 });
     }
-  }, []);
+  };
 
   const formatPrice = (priceUsd) => {
     if (priceUsd === 0) return "Free";
@@ -89,12 +138,38 @@ export default function PlanMatrix() {
   };
 
   const subscribe = async (planId) => {
+    if (!user) {
+      alert("Please sign in to subscribe");
+      return;
+    }
+
     setLoading(planId);
-    // Simulate checkout process
-    setTimeout(() => {
-      alert(`Redirecting to checkout for ${planId} plan...`);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { planId }
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Redirect to Paystack checkout
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      }
+    } catch (err) {
+      console.error("Subscription error:", err);
+      setError(err.message);
       setLoading(null);
-    }, 1500);
+    }
+  };
+
+  const isCurrentPlan = (planId) => {
+    return currentSubscription?.plan === planId && currentSubscription?.status === "active";
   };
 
   return (
@@ -102,11 +177,21 @@ export default function PlanMatrix() {
       <div className="text-center mb-16">
         <h1 className="text-5xl font-bold text-slate-900 mb-4">Simple, Transparent Pricing</h1>
         <p className="text-xl text-slate-600">Choose the plan that fits your growth</p>
+        <p className="text-sm text-slate-500 mt-2">7-day trial period • Cancel anytime</p>
       </div>
+
+      {error && (
+        <div className="max-w-2xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <p className="text-red-800 text-sm">{error}</p>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
         {BASE_PLANS.map((plan) => {
           const Icon = plan.icon;
+          const isCurrent = isCurrentPlan(plan.id);
+          
           return (
             <div
               key={plan.id}
@@ -117,7 +202,7 @@ export default function PlanMatrix() {
               }`}
             >
               {plan.popular && (
-                <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-blue-500 text-black px-6 py-2 rounded-full text-sm font-bold shadow-lg">
+                <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
                   Most Popular
                 </span>
               )}
@@ -139,7 +224,7 @@ export default function PlanMatrix() {
                   <span className="text-5xl font-bold text-slate-900">{formatPrice(plan.priceUsd)}</span>
                   <span className="text-slate-600 font-medium">/month</span>
                 </div>
-                <p className="text-sm text-slate-500">Pay as you go · Cancel anytime</p>
+                <p className="text-sm text-slate-500">7-day trial • Cancel anytime</p>
               </div>
 
               <div className="flex-grow space-y-3 mb-8">
@@ -152,15 +237,21 @@ export default function PlanMatrix() {
               </div>
 
               <button
-                disabled={loading !== null}
+                disabled={loading !== null || isCurrent}
                 onClick={() => subscribe(plan.id)}
                 className={`w-full py-4 px-6 rounded-xl font-semibold text-base transition-all ${
-                  plan.popular
-                    ? "bg-gradient-to-r from-blue-600 to-blue-500 text-black hover:from-blue-700 hover:to-blue-600 shadow-lg hover:shadow-xl hover:-translate-y-1"
-                    : "bg-slate-900 text-black hover:bg-slate-800 shadow-md hover:shadow-lg hover:-translate-y-1"
+                  isCurrent
+                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                    : plan.popular
+                    ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                    : "bg-slate-900 text-white hover:bg-slate-800 shadow-md hover:shadow-lg hover:-translate-y-1"
                 } ${loading !== null ? "opacity-50 cursor-not-allowed" : ""} disabled:hover:transform-none`}
               >
-                {loading === plan.id ? "Redirecting..." : `Get Started`}
+                {isCurrent 
+                  ? "Current Plan" 
+                  : loading === plan.id 
+                  ? "Redirecting..." 
+                  : "Start 7-Day Trial"}
               </button>
             </div>
           );
@@ -169,7 +260,7 @@ export default function PlanMatrix() {
 
       <div className="text-center mt-16">
         <p className="text-slate-600 text-lg">
-          No contracts · No hidden fees · 100% transparent
+          No contracts • No hidden fees • 100% transparent
         </p>
       </div>
     </div>

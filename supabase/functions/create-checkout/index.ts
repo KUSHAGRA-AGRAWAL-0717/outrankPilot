@@ -26,18 +26,23 @@ serve(async (req) => {
 
     const { planId } = await req.json();
 
-    // Your base prices in GHS Pesewas (100 Pesewas = 1 GHS)
-    const BASE_PRICES_GHS: Record<string, number> = {
-      pro: 15000,    // 150 GHS
-      agency: 45000, // 450 GHS
+    // Plan pricing based on your image (in USD cents, then converted)
+    const PLAN_PRICES: Record<string, { usd: number, name: string }> = {
+      essential: { usd: 9900, name: "Essential" },  // $99
+      grow: { usd: 29900, name: "Grow" },          // $299
+      premium: { usd: 59900, name: "Premium" },     // $599
     };
 
-    const amountInGHS = BASE_PRICES_GHS[planId];
-    if (!amountInGHS) throw new Error(`Invalid plan selected: ${planId}`);
+    const planConfig = PLAN_PRICES[planId];
+    if (!planConfig) throw new Error(`Invalid plan selected: ${planId}`);
 
-    // FORCE GHS to avoid "currency not served by merchant" error
-    const finalAmount = amountInGHS;
-    const finalCurrency = "GHS"; 
+    // Convert to GHS Pesewas (1 USD ≈ 11 GHS, 100 pesewas = 1 GHS)
+    const usdToGhsRate = 11;
+    const amountInGhsPesewas = Math.round((planConfig.usd / 100) * usdToGhsRate * 100);
+
+    // Calculate trial end (7 days from now)
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + 7);
 
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -47,24 +52,35 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         email: user.email,
-        amount: finalAmount, 
-        currency: finalCurrency, 
+        amount: amountInGhsPesewas, 
+        currency: "GHS", 
         metadata: { 
           user_id: user.id, 
-          planId: planId 
+          planId: planId,
+          plan_name: planConfig.name,
+          trial_period: true,
+          trial_days: 7
         },
-        // Optional: you can add a callback_url here to redirect users back to your site
-        // callback_url: "https://your-site.com/dashboard"
+        callback_url: `${Deno.env.get("SITE_URL")}/dashboard?payment=success`,
       }),
     });
 
     const paystackData = await paystackRes.json();
     
     if (!paystackData.status) {
-      // Log the specific error from Paystack for debugging
       console.error("Paystack API Error:", paystackData.message);
       throw new Error(paystackData.message || "Paystack initialization error");
     }
+
+    // Update subscription to track trial period
+    await supabase
+      .from("subscriptions")
+      .update({
+        status: "trialing",
+        trial_start_at: new Date().toISOString(),
+        trial_ends_at: trialEndDate.toISOString(),
+      })
+      .eq("user_id", user.id);
 
     return new Response(JSON.stringify({ checkout_url: paystackData.data.authorization_url }), {
       status: 200,

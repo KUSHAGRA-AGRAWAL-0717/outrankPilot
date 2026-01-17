@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UsersTab from "./../components/admin/UsersTab";
 import SubscriptionsTab from "./../components/admin/SubscriptionsTab";
+import RefundsTab from "./../components/admin/RefundsTab";
 import UsageTab from "./../components/admin/UsageTab";
 import CostsTab from "./../components/admin/CostsTab";
 import BlogTab from "./../components/admin/BlogTab";
@@ -14,13 +15,13 @@ export default function AdminPage() {
             Admin Dashboard
           </h1>
           <p className="text-[#5B6B8A] mt-2 text-sm md:text-base">
-            Manage users, subscriptions, blog posts, and system settings
+            Manage users, subscriptions, refunds, blog posts, and system settings
           </p>
         </div>
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 h-auto md:h-14 mb-6 bg-white border border-[#8A94B3]/30 p-1">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto md:h-14 mb-6 bg-white border border-[#8A94B3]/30 p-1">
           <TabsTrigger 
             value="users"
             className="data-[state=active]:bg-[#FFD84D] data-[state=active]:text-[#0B1F3B] text-[#5B6B8A] py-2"
@@ -32,6 +33,12 @@ export default function AdminPage() {
             className="data-[state=active]:bg-[#FFD84D] data-[state=active]:text-[#0B1F3B] text-[#5B6B8A] py-2"
           >
             Subscriptions
+          </TabsTrigger>
+          <TabsTrigger 
+            value="refunds"
+            className="data-[state=active]:bg-[#FFD84D] data-[state=active]:text-[#0B1F3B] text-[#5B6B8A] py-2"
+          >
+            Refunds
           </TabsTrigger>
           <TabsTrigger 
             value="blog"
@@ -59,6 +66,10 @@ export default function AdminPage() {
 
         <TabsContent value="subscriptions" className="space-y-4">
           <SubscriptionsTab />
+        </TabsContent>
+
+        <TabsContent value="refunds" className="space-y-4">
+          <RefundsTab />
         </TabsContent>
 
         <TabsContent value="blog" className="space-y-4">

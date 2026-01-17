@@ -5,6 +5,7 @@ import {
   Key,
   Bell,
   Loader2,
+  DollarSign,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import ConnectWordPress from "@/components/ConnectWordPress";
@@ -15,14 +16,16 @@ import IntegrationsDashboard from "@/components/IntegrationsDashboard";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useApp } from "@/contexts/AppContext";
-import { countryOptions, languageOptions } from "../hooks/locate"
+import { countryOptions, languageOptions } from "../hooks/locate";
 import { Combobox } from "@headlessui/react";
+import RefundRequest from "@/components/RefundRequest";
 
 const tabs = [
   { id: "Integrations", label: "Integrations", icon: Globe },
   { id: "account", label: "Account", icon: User },
   { id: "api", label: "API Keys", icon: Key },
-  { id: "wordpress", label: "WordPress", icon: Bell }
+  { id: "wordpress", label: "WordPress", icon: Bell },
+  { id: "refund", label: "Request Refund", icon: DollarSign },
 ];
 
 export default function Settings() {
@@ -125,59 +128,58 @@ export default function Settings() {
       })
       .eq("id", currentProject.id);
 
-    setWpUrl(""); setWpUsername(""); setWpPassword("");
+    setWpUrl(""); 
+    setWpUsername(""); 
+    setWpPassword("");
     setConnected(false);
     toast.success("WordPress disconnected");
   };
 
   if (loading) {
     return (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-[#1B64F2]" />
-        </div>
-      
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-[#1B64F2]" />
+      </div>
     );
   }
 
   return (
- 
-      <div className="max-w-4xl space-y-6 bg-[#F6F8FC] min-h-screen p-6">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0B1F3B]">Integrations & Settings</h1>
-          <p className="text-[#5B6B8A]">Manage integrations and preferences</p>
+    <div className="max-w-4xl space-y-6 bg-[#F6F8FC] min-h-screen p-6">
+      <div>
+        <h1 className="text-2xl font-bold text-[#0B1F3B]">Integrations & Settings</h1>
+        <p className="text-[#5B6B8A]">Manage integrations and preferences</p>
+      </div>
+
+      <div className="flex gap-6">
+        {/* Sidebar Tabs */}
+        <div className="w-48 space-y-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                activeTab === tab.id
+                  ? "bg-[#1B64F2]/10 text-[#1B64F2] shadow-md"
+                  : "text-[#5B6B8A] hover:bg-[#F6F8FC] hover:text-[#0B1F3B]"
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        <div className="flex gap-6">
-          {/* Simplified Tabs */}
-          <div className="w-48 space-y-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
-                  activeTab === tab.id
-                    ? "bg-[#1B64F2]/10 text-[#1B64F2] shadow-md"
-                    : "text-[#5B6B8A] hover:bg-[#F6F8FC] hover:text-[#0B1F3B]"
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            ))}
-          </div>
+        {/* Tab Content */}
+        <div className="flex-1">
+          {activeTab === "Integrations" && (
+            <div className="text-black shadow-md">
+              <h2 className="text-xl font-bold text-[#0B1F3B] mb-6">Integrations</h2>
+              <IntegrationsDashboard projectId={currentProject?.id} user={user} />
+            </div>
+          )}
 
-         {activeTab === "Integrations" && (
-  <div className="text-black shadow-md">
-    <h2 className="text-xl font-bold text-[#0B1F3B] mb-6">Integrations</h2>
-    <IntegrationsDashboard projectId={currentProject?.id} user={user} />
-
-  </div>
-)}
-
-
-          {/* Other tabs remain minimal */}
           {activeTab === "account" && (
-            <div className="flex-1 p-8 rounded-xl border border-[#8A94B3]/30 bg-white shadow-sm">
+            <div className="p-8 rounded-xl border border-[#8A94B3]/30 bg-white shadow-sm">
               <h2 className="text-xl font-bold text-[#0B1F3B] mb-6">Account Settings</h2>
               <div className="space-y-4 max-w-md">
                 <div>
@@ -190,7 +192,7 @@ export default function Settings() {
           )}
 
           {activeTab === "api" && (
-            <div className="flex-1 p-8 rounded-xl border border-[#8A94B3]/30 shadow-sm">
+            <div className="p-8 rounded-xl border border-[#8A94B3]/30 bg-white shadow-sm">
               <h2 className="text-xl font-bold text-[#0B1F3B] mb-6">API Keys</h2>
               <div className="space-y-4">
                 <div className="p-6 rounded-xl border bg-[#3EF0C1]/10 text-black">
@@ -204,8 +206,9 @@ export default function Settings() {
               </div>
             </div>
           )}
+
           {activeTab === "wordpress" && (
-            <div className="flex-1 p-8 rounded-xl border border-[#8A94B3]/30 bg-white shadow-sm">
+            <div className="p-8 rounded-xl border border-[#8A94B3]/30 bg-white shadow-sm">
               <h2 className="text-xl font-bold text-[#0B1F3B] mb-6">WordPress Integration</h2>
               <ConnectWordPress
                 wpUrl={wpUrl}
@@ -230,7 +233,14 @@ export default function Settings() {
               />
             </div>
           )}
+
+          {activeTab === "refund" && (
+            <div className="rounded-xl">
+              <RefundRequest />
+            </div>
+          )}
         </div>
       </div>
+    </div>
   );
 }
