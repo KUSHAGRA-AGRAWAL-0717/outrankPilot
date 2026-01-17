@@ -1,339 +1,389 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
-interface ParsedContent {
+interface BriefData {
+  id: string;
   title: string;
+  content: string;
   meta_description: string;
-  h1: string;
-  sections: string[];
   word_count: number;
-  primary_keyword: string;
-  secondary_keywords: string[];
+  keyword_id: string;
 }
 
 export default function EditBrief() {
   const { briefId } = useParams<{ briefId: string }>();
-  const [data, setData] = useState<ParsedContent | null>(null);
+  const navigate = useNavigate();
+  
+  const [data, setData] = useState<BriefData | null>(null);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [editedMetaDesc, setEditedMetaDesc] = useState('');
+  const [editedContent, setEditedContent] = useState('');
+  const [wordCount, setWordCount] = useState(0);
+  
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!briefId) return;
 
     const load = async () => {
-      const { data, error } = await supabase
-        .from('content_briefs')
-        .select('content')
-        .eq('id', briefId)
-        .single();
-
-      if (error) {
-        toast.error('Failed to load brief');
-        return;
-      }
-
+      setLoading(true);
       try {
-        setData(JSON.parse(data.content));
-      } catch {
-        toast.error('Invalid JSON content');
+        const { data, error } = await supabase
+          .from('content_briefs')
+          .select('id, title, content, meta_description, word_count, keyword_id')
+          .eq('id', briefId)
+          .single();
+
+        if (error) throw error;
+
+        setData(data);
+        setEditedTitle(data.title);
+        setEditedMetaDesc(data.meta_description || '');
+        setEditedContent(data.content || '');
+        setWordCount(data.word_count || 0);
+      } catch (error) {
+        console.error('Failed to load brief:', error);
+        toast.error('Failed to load brief');
+      } finally {
+        setLoading(false);
       }
     };
 
     load();
   }, [briefId]);
 
-  const update = <K extends keyof ParsedContent>(
-    key: K,
-    value: ParsedContent[K]
-  ) => {
-    if (!data) return;
-    setData({ ...data, [key]: value });
-  };
+  // Calculate word count from HTML content
+  useEffect(() => {
+    if (!editedContent) {
+      setWordCount(0);
+      return;
+    }
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = editedContent;
+    const text = tempDiv.textContent || tempDiv.innerText || '';
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    setWordCount(words.length);
+  }, [editedContent]);
 
   const save = async () => {
-    if (!data) return;
+    if (!data || !briefId) return;
+    
     setSaving(true);
+    
+    try {
+      const { error } = await supabase
+        .from('content_briefs')
+        .update({
+          title: editedTitle,
+          meta_description: editedMetaDesc,
+          content: editedContent,
+          word_count: wordCount
+        })
+        .eq('id', briefId);
 
-    const { error } = await supabase
-      .from('content_briefs')
-      .update({ content: JSON.stringify(data, null, 2) })
-      .eq('id', briefId);
+      if (error) throw error;
 
-    setSaving(false);
-
-    error ? toast.error('Save failed') : toast.success('Saved');
+      toast.success('✅ Changes saved successfully!');
+      
+      setData({
+        ...data,
+        title: editedTitle,
+        meta_description: editedMetaDesc,
+        content: editedContent,
+        word_count: wordCount
+      });
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error('Failed to save changes');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  // Quill editor modules configuration
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'align': [] }],
+      ['link', 'image'],
+      ['clean'],
+      ['blockquote', 'code-block']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'color', 'background',
+    'list', 'bullet',
+    'align',
+    'link', 'image',
+    'blockquote', 'code-block'
+  ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F6F8FC] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#1B64F2]" />
+      </div>
+    );
+  }
 
   if (!data) {
     return (
-     
-        <div style={{ padding: 32, color: '#9CA3AF' }}>Loading…</div>
-    
+      <div className="min-h-screen bg-[#F6F8FC] flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-[#5B6B8A] text-lg mb-4">Brief not found</div>
+          <button
+            onClick={() => navigate('/briefs')}
+            className="text-[#1B64F2] hover:underline"
+          >
+            Return to Briefs
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
-   <div>
-      <div
-        className="edit-brief"
-        style={{
-          maxWidth: 900,
-          margin: '0 auto',
-          padding: 24,
-          color: '#E5E7EB'
-        }}
-      >
-        {/** CARD */}
-        {[
-          {
-            title: 'Article Metadata',
-            body: (
-              <>
-                <Field label="SEO Title">
-                  <input
-                    value={data.title}
-                    onChange={e => update('title', e.target.value)}
-                  />
-                </Field>
-
-                <Field label="Meta Description">
-                  <textarea
-                    rows={3}
-                    value={data.meta_description}
-                    onChange={e =>
-                      update('meta_description', e.target.value)
-                    }
-                  />
-                </Field>
-
-                <Field label="Main Heading (H1)">
-                  <input
-                    value={data.h1}
-                    onChange={e => update('h1', e.target.value)}
-                  />
-                </Field>
-              </>
-            )
-          },
-          {
-            title: 'SEO Targets',
-            body: (
-              <>
-                <Field label="Primary Keyword">
-                  <input
-                    value={data.primary_keyword}
-                    onChange={e =>
-                      update('primary_keyword', e.target.value)
-                    }
-                  />
-                </Field>
-
-                <Field label="Target Word Count">
-                  <input
-                    type="number"
-                    value={data.word_count}
-                    onChange={e =>
-                      update('word_count', Number(e.target.value))
-                    }
-                  />
-                </Field>
-
-                <Field label="Secondary Keywords">
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {data.secondary_keywords.map((k, i) => (
-                      <input
-                        key={i}
-                        value={k}
-                        onChange={e => {
-                          const next = [...data.secondary_keywords];
-                          next[i] = e.target.value;
-                          update('secondary_keywords', next);
-                        }}
-                        style={{ width: 200 }}
-                      />
-                    ))}
-                  </div>
-                </Field>
-              </>
-            )
-          },
-          {
-            title: 'Outline Sections',
-            body: (
-              <>
-                {data.sections.map((s, i) => (
-                  <input
-                    key={i}
-                    value={s}
-                    onChange={e => {
-                      const next = [...data.sections];
-                      next[i] = e.target.value;
-                      update('sections', next);
-                    }}
-                    style={{ marginBottom: 8 }}
-                  />
-                ))}
-                <button
-                  onClick={() =>
-                    update('sections', [...data.sections, 'New section'])
-                  }
-                >
-                  Add section
-                </button>
-              </>
-            )
-          }
-        ].map((card, i) => (
-          <div key={i} className="card">
-            <h3>{card.title}</h3>
-            {card.body}
+    <div className="min-h-screen bg-[#F6F8FC]">
+      {/* Header */}
+      <div className="bg-white border-b border-[#E6EAF2] sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate('/briefs')}
+                className="flex items-center gap-2 text-[#5B6B8A] hover:text-[#0B1F3B] transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5" />
+                <span className="font-medium">Back to Briefs</span>
+              </button>
+            </div>
+            
+            <button
+              onClick={save}
+              disabled={saving}
+              className="flex items-center gap-2 bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] px-6 py-2.5 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Save Changes
+                </>
+              )}
+            </button>
           </div>
-        ))}
-
-        {/** PREVIEW */}
-        <div className="card">
-          <h3>Live Preview</h3>
-
-          <h1>{data.title}</h1>
-          <p className="muted">{data.meta_description}</p>
-
-          <h2>{data.h1}</h2>
-
-          {data.sections.map((s, i) => (
-            <h3 key={i}>{s}</h3>
-          ))}
-
-          <div className="badges">
-            <span>{data.primary_keyword}</span>
-            {data.secondary_keywords.map((k, i) => (
-              <span key={i}>{k}</span>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={save} disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
-          </button>
         </div>
       </div>
 
-      {/* PAGE-LOCAL STYLES */}
+      {/* Main Content */}
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Metadata Card */}
+        <div className="bg-white rounded-xl border border-[#E6EAF2] p-6 mb-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-[#0B1F3B] mb-4">Article Metadata</h2>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-[#5B6B8A] mb-2">
+                Article Title
+              </label>
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white border border-[#E6EAF2] rounded-lg text-[#0B1F3B] focus:outline-none focus:ring-2 focus:ring-[#1B64F2] focus:border-transparent"
+                placeholder="Enter article title..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#5B6B8A] mb-2">
+                Meta Description
+              </label>
+              <textarea
+                value={editedMetaDesc}
+                onChange={(e) => setEditedMetaDesc(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-2.5 bg-white border border-[#E6EAF2] rounded-lg text-[#0B1F3B] focus:outline-none focus:ring-2 focus:ring-[#1B64F2] focus:border-transparent resize-none"
+                placeholder="Enter meta description..."
+              />
+              <div className="mt-1 text-xs text-[#8A94B3]">
+                {editedMetaDesc.length} / 160 characters recommended
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 pt-2 border-t border-[#E6EAF2]">
+              <div className="text-sm text-[#5B6B8A]">
+                Word Count: <span className="font-medium text-[#0B1F3B]">{wordCount.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Rich Text Editor */}
+        <div className="bg-white rounded-xl border border-[#E6EAF2] shadow-sm overflow-hidden">
+          <div className="border-b border-[#E6EAF2] px-6 py-4 bg-[#F6F8FC]">
+            <h2 className="text-lg font-semibold text-[#0B1F3B]">
+              ✍️ Content Editor
+            </h2>
+            <p className="text-sm text-[#5B6B8A] mt-1">
+              Use the toolbar to format your content - no HTML knowledge required!
+            </p>
+          </div>
+
+          <div className="p-6">
+            <ReactQuill 
+              theme="snow"
+              value={editedContent}
+              onChange={setEditedContent}
+              modules={modules}
+              formats={formats}
+              className="quill-editor"
+              placeholder="Start writing your content here..."
+            />
+          </div>
+        </div>
+      </div>
+
       <style>{`
-  .edit-brief {
-    background: #F6F8FC;
-  }
+        /* Quill Editor Customization */
+        .quill-editor .ql-container {
+          min-height: 500px;
+          font-size: 16px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
 
-  /* Cards */
-  .edit-brief .card {
-    background: #FFFFFF;
-    padding: 24px;
-    border-radius: 14px;
-    margin-bottom: 24px;
-    border: 1px solid #E6EAF2;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-  }
+        .quill-editor .ql-editor {
+          min-height: 500px;
+          padding: 24px;
+          line-height: 1.8;
+        }
 
-  /* Headings */
-  .edit-brief h1,
-  .edit-brief h2,
-  .edit-brief h3 {
-    color: #0B1F3B;
-    font-weight: 600;
-  }
+        .quill-editor .ql-toolbar {
+          border: 1px solid #E6EAF2;
+          border-bottom: 2px solid #E6EAF2;
+          border-radius: 8px 8px 0 0;
+          background: #F6F8FC;
+          padding: 12px;
+        }
 
-  .edit-brief h3 {
-    margin-bottom: 14px;
-  }
+        .quill-editor .ql-container {
+          border: 1px solid #E6EAF2;
+          border-top: none;
+          border-radius: 0 0 8px 8px;
+          background: white;
+        }
 
-  /* Inputs */
-  .edit-brief input,
-  .edit-brief textarea {
-    width: 100%;
-    background: #FFFFFF;
-    border: 1px solid #E6EAF2;
-    color: #5B6B8A;
-    padding: 12px 14px;
-    border-radius: 10px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
+        .quill-editor .ql-editor h1 {
+          font-size: 2.25rem;
+          font-weight: 700;
+          color: #0B1F3B;
+          margin-top: 1.5rem;
+          margin-bottom: 1rem;
+        }
 
-  .edit-brief input::placeholder,
-  .edit-brief textarea::placeholder {
-    color: #8A94B3;
-  }
+        .quill-editor .ql-editor h2 {
+          font-size: 1.875rem;
+          font-weight: 700;
+          color: #0B1F3B;
+          margin-top: 2rem;
+          margin-bottom: 1rem;
+        }
 
-  .edit-brief input:focus,
-  .edit-brief textarea:focus {
-    outline: none;
-    border-color: #1B64F2;
-    box-shadow: 0 0 0 3px rgba(27, 100, 242, 0.12);
-  }
+        .quill-editor .ql-editor h3 {
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: #0B1F3B;
+          margin-top: 1.5rem;
+          margin-bottom: 0.75rem;
+        }
 
-  /* Buttons */
-  .edit-brief button {
-    background: #FFD84D;
-    color: #0B1F3B;
-    padding: 12px 18px;
-    border-radius: 10px;
-    border: none;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s ease, transform 0.1s ease;
-  }
+        .quill-editor .ql-editor p {
+          color: #5B6B8A;
+          margin-bottom: 1rem;
+          line-height: 1.8;
+        }
 
-  .edit-brief button:hover {
-    background: #F5C842;
-  }
+        .quill-editor .ql-editor ul,
+        .quill-editor .ql-editor ol {
+          padding-left: 1.5rem;
+          margin-bottom: 1rem;
+        }
 
-  .edit-brief button:active {
-    transform: translateY(1px);
-  }
+        .quill-editor .ql-editor li {
+          color: #5B6B8A;
+          margin-bottom: 0.5rem;
+        }
 
-  /* Muted text */
-  .edit-brief .muted {
-    color: #8A94B3;
-  }
+        .quill-editor .ql-editor strong {
+          font-weight: 600;
+          color: #0B1F3B;
+        }
 
-  /* Badges / keywords */
-  .edit-brief .badges span {
-    display: inline-block;
-    background: #F6F8FC;
-    border: 1px solid #E6EAF2;
-    color: #1B64F2;
-    padding: 6px 12px;
-    border-radius: 999px;
-    margin-right: 8px;
-    margin-top: 8px;
-    font-size: 0.85rem;
-    font-weight: 500;
-  }
-`}</style>
-    </div>
-  );
-}
+        .quill-editor .ql-editor img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 8px;
+          margin: 1.5rem 0;
+        }
 
-function Field({
-  label,
-  children
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div style={{ marginBottom: 16 }}>
-      <label
-        style={{
-          display: 'block',
-          marginBottom: 6,
-          color: '#9CA3AF',
-          fontSize: 13
-        }}
-      >
-        {label}
-      </label>
-      {children}
+        .quill-editor .ql-editor blockquote {
+          border-left: 4px solid #1B64F2;
+          padding-left: 1rem;
+          margin: 1.5rem 0;
+          color: #5B6B8A;
+          font-style: italic;
+        }
+
+        .quill-editor .ql-editor.ql-blank::before {
+          color: #8A94B3;
+          font-style: normal;
+        }
+
+        /* Toolbar button hover effects */
+        .quill-editor .ql-toolbar button:hover,
+        .quill-editor .ql-toolbar button:focus {
+          color: #1B64F2;
+        }
+
+        .quill-editor .ql-toolbar button.ql-active {
+          color: #1B64F2;
+        }
+
+        .quill-editor .ql-stroke {
+          stroke: #5B6B8A;
+        }
+
+        .quill-editor .ql-toolbar button:hover .ql-stroke,
+        .quill-editor .ql-toolbar button.ql-active .ql-stroke {
+          stroke: #1B64F2;
+        }
+
+        .quill-editor .ql-fill {
+          fill: #5B6B8A;
+        }
+
+        .quill-editor .ql-toolbar button:hover .ql-fill,
+        .quill-editor .ql-toolbar button.ql-active .ql-fill {
+          fill: #1B64F2;
+        }
+      `}</style>
     </div>
   );
 }

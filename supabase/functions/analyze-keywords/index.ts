@@ -48,11 +48,18 @@ serve(async (req) => {
     
     const serp = await serpResponse.json();
 
-    // Extract metrics
-    const volume = serp.search_information?.total_results ?? 0;
-    const cpc = serp.ads?.[0]?.cpc ?? 0;
+    // ✅ FIX: Extract metrics with proper type handling for large numbers
+    // Volume can be very large (billions), so we handle it as bigint
+    const volumeRaw = serp.search_information?.total_results ?? 0;
+    const volume = typeof volumeRaw === 'number' ? volumeRaw : parseInt(volumeRaw) || 0;
+    
+    const cpcRaw = serp.ads?.[0]?.cpc ?? 0;
+    const cpc = typeof cpcRaw === 'number' ? cpcRaw : parseFloat(cpcRaw) || 0;
+    
     const difficulty = Math.min(100, (serp.organic_results?.length ?? 10) * 8);
     const serpFeatures = serp.search_information;
+
+    console.log(`Keyword: ${keyword}, Volume: ${volume} (type: ${typeof volume})`);
 
     // AI intent classification
     const aiResp = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -102,11 +109,12 @@ serve(async (req) => {
       console.error("JSON parse error:", parseError);
     }
 
-    // Update keyword with all analyzed data
+    // ✅ FIX: Update keyword with all analyzed data
+    // Make sure volume is properly handled as a number
     const { error: updateError } = await supabase
       .from("keywords")
       .update({
-        volume,
+        volume: volume,  // This will now work with bigint column
         difficulty,
         cpc,
         intent: parsed.intent,
@@ -116,13 +124,24 @@ serve(async (req) => {
       })
       .eq("id", keyword_id);
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error("Update error:", updateError);
+      throw updateError;
+    }
+
+    console.log(`Successfully updated keyword ${keyword_id} with volume: ${volume}`);
 
     // ✅ Return with CORS headers
     return new Response(
       JSON.stringify({ 
         success: true, 
-        data: { volume, difficulty, cpc, intent: parsed.intent, priority_score: parsed.priority_score }
+        data: { 
+          volume, 
+          difficulty, 
+          cpc, 
+          intent: parsed.intent, 
+          priority_score: parsed.priority_score 
+        }
       }), 
       { status: 200, headers: corsHeaders }
     );
@@ -142,7 +161,9 @@ serve(async (req) => {
           .update({ status: "failed" })
           .eq("id", payload.keyword_id);
       }
-    } catch {}
+    } catch (errorHandlingErr) {
+      console.error("Error handling failed:", errorHandlingErr);
+    }
     
     // ✅ Return error with CORS headers
     return new Response(

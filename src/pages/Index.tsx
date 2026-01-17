@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
   ArrowRight, 
   Target, 
@@ -9,7 +9,19 @@ import {
   BarChart3,
   ChevronDown,
   Menu,
-  X
+  X,
+  Linkedin,
+  Twitter,
+  Facebook,
+  Instagram,
+  XCircle,
+  Search,
+  Brain,
+  BookOpen,
+  Settings,
+  FileCode,
+  MessageSquare,
+  Gift
 } from 'lucide-react';
 import logo from "../../public/logo2.jpeg"
 
@@ -18,29 +30,155 @@ const features = [
     icon: Target,
     title: 'Keyword Research',
     description: 'Discover high-value keywords with search volume and difficulty analysis.',
+    id: 'keyword-research'
   },
   {
     icon: BarChart3,
     title: 'SERP Analysis',
     description: 'Analyze top-ranking pages to understand what makes content rank.',
+    id: 'serp-analysis'
   },
   {
     icon: FileText,
     title: 'AI Content Briefs',
     description: 'Generate comprehensive 3,500+ word briefs optimized for SEO.',
+    id: 'ai-content'
   },
   {
     icon: Globe,
     title: 'WordPress Publishing',
     description: 'One-click publishing directly to your WordPress site.',
+    id: 'wordpress-publishing'
   },
 ];
 
+const comparisonData = [
+  {
+    category: 'Content Production',
+    manual: '4-6 hours',
+    basic: '45-90 minutes',
+    outrank: '5-7 minutes, fully hands-free'
+  },
+  {
+    category: 'Articles Per Month',
+    manual: '4-8 articles',
+    basic: '10-15 articles',
+    outrank: '30-Unlimited articles'
+  },
+  {
+    category: 'Workflow',
+    manual: 'Manual & time-consuming',
+    basic: 'User-prompted',
+    outrank: 'Fully automated, done for you'
+  },
+  {
+    category: 'SEO Optimization',
+    manual: 'Manual SEO checks',
+    basic: 'Basic optimization',
+    outrank: 'Advanced SERP + intent optimization'
+  },
+  {
+    category: 'Content Quality',
+    manual: 'Depends on writer',
+    basic: 'Generic AI text',
+    outrank: 'Human-like, brand-ready articles'
+  },
+  {
+    category: 'Publishing',
+    manual: 'Copy-paste',
+    basic: 'Manual',
+    outrank: 'Auto-publish to WP, Ghost, Webflow, Wix, Shopify & more'
+  },
+  {
+    category: 'Updates',
+    manual: 'Never updated',
+    basic: 'Never updated',
+    outrank: 'Continuous updates & evergreen refresh'
+  },
+  {
+    category: 'Images',
+    manual: 'Stock images',
+    basic: 'None',
+    outrank: 'AI-generated branded images (multiple styles)'
+  },
+  {
+    category: 'Backlinks',
+    manual: 'Manual outreach',
+    basic: 'Not included',
+    outrank: 'High-DR backlinks on autopilot (Grow+)'
+  },
+  {
+    category: 'Languages',
+    manual: '1 language',
+    basic: 'Limited',
+    outrank: '150+ languages'
+  },
+  {
+    category: 'Scalability',
+    manual: 'Not scalable',
+    basic: 'Single site',
+    outrank: '1 → Unlimited WordPress sites'
+  },
+  {
+    category: 'Team Size',
+    manual: 'Single author',
+    basic: 'Seat-based pricing',
+    outrank: 'Unlimited users per organization'
+  }
+];
+
 const steps = [
-  { step: '01', title: 'Add Your Domain', description: 'Connect your WordPress site in seconds' },
-  { step: '02', title: 'Research Keywords', description: 'Find keywords with ranking potential' },
-  { step: '03', title: 'Generate Brief', description: 'AI creates comprehensive content outlines' },
-  { step: '04', title: 'Publish Content', description: 'One-click publishing to WordPress' },
+  { 
+    step: '1', 
+    title: 'Create a Series', 
+    description: 'Choose a topic for your content series. Select from our preset list or create a custom prompt. Our AI will begin crafting your first unique article immediately.'
+  },
+  { 
+    step: '2', 
+    title: 'Preview and Customize', 
+    description: 'Edit your posting schedule, connect your channels, and let AutoShorts handle the rest. We\'ll take care of creating and posting while you relax.'
+  },
+  { 
+    step: '3', 
+    title: 'Watch Your Channel Grow', 
+    description: 'Connect your WordPress, Ghost, or other platforms. Set your publishing schedule and preferences for maximum impact.'
+  },
+];
+
+const integrations = [
+  'WordPress', 'Ghost', 'Webflow', 'Notion', 'Wix', 'Shopify', 'Webhook', 'Framer'
+];
+
+const navigationItems = [
+  {
+    label: 'Products',
+    hasDropdown: true,
+    dropdownItems: [
+      { icon: Brain, label: 'AI Autopilot Content', href: '/features/ai-autopilot' },
+      { icon: Search, label: 'Keyword Research', href: '/features/keyword-research' },
+      { icon: FileText, label: 'AI Content Generator', href: '/features/content-generator' },
+      { icon: BarChart3, label: 'SERP Analysis', href: '/features/serp-analysis' },
+      { icon: FileCode, label: 'Content Planner', href: '/features/content-planner' },
+      { icon: Globe, label: 'WordPress Publishing', href: '/features/wordpress-publishing' }
+    ]
+  },
+  {
+    label: 'Resources',
+    hasDropdown: true,
+    dropdownItems: [
+      { icon: BookOpen, label: 'Blog & Articles', href: '/blog' },
+      { icon: FileText, label: 'Writing Examples', href: '/examples' },
+      { icon: Target, label: 'How it Works', href: '#how-it-works' },
+      { icon: Settings, label: 'Integrations', href: '#integrations' },
+      { icon: MessageSquare, label: 'Support Ticket', href: '/support' },
+      { icon: Gift, label: 'Affiliate Program', href: '/affiliate-programme' }
+    ]
+  },
+  {
+    label: 'Pricing',
+    hasDropdown: false,
+    href: '#pricing'
+  }
 ];
 
 const pricingPlans = [
@@ -48,7 +186,7 @@ const pricingPlans = [
     name: 'Starter',
     price: '$99',
     period: '/month',
-     description: "A hands-free starter: AI articles + basic integrations.",
+    description: "A hands-free starter: AI articles + basic integrations.",
     features: [
       "30 Articles /mo generated and published on autopilot",
       "Unlimited users in your organization",
@@ -95,80 +233,75 @@ const pricingPlans = [
   },
 ];
 
-const integrations = [
-  'WordPress', 'Ghost', 'Webflow', 'Notion', 'Wix', 'Shopify', 'Webhook', 'Framer'
-];
-
-const navigationItems = [
-  {
-    label: 'Features',
-    hasDropdown: true,
-    dropdownItems: [
-      { label: 'Keyword Research', href: '#features' },
-      { label: 'SERP Analysis', href: '#features' },
-      { label: 'AI Content Briefs', href: '#features' },
-      { label: 'WordPress Publishing', href: '#features' },
-    ]
-  },
-  {
-    label: 'Services',
-    hasDropdown: true,
-    dropdownItems: [
-      { label: 'E-commerce', href: '/public-services' },
-      { label: 'SaaS', href: '/public-services' },
-      { label: 'Agencies', href: '/public-services' },
-      { label: 'Publishers', href: '/public-services' },
-    ]
-  },
-  {
-    label: 'Resources',
-    hasDropdown: true,
-    dropdownItems: [
-      { label: 'Blog', href: '/blog' },
-      { label: 'Privacy', href: '/privacy' }
-    ]
-  },
-  {
-    label: 'Pricing',
-    hasDropdown: false,
-    href: '#pricing'
-  },
-  {
-    label: 'Integrations',
-    hasDropdown: true,
-    dropdownItems: [
-      { label: 'Notion', href: '#integrations' },
-      { label: 'Google Analytics', href: '#integrations' },
-    ]
-  },
-];
-
 export default function Index() {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const hoverTimeoutRef = useRef(null);
+  const dropdownTimeoutRef = useRef(null);
+
+  const handleMouseEnter = (itemLabel) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
+      setOpenDropdown(itemLabel);
+    }, 150);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    dropdownTimeoutRef.current = setTimeout(() => {
+      setOpenDropdown(null);
+    }, 300);
+  };
+
+  const handleDropdownMouseEnter = () => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+    }
+  };
+
+  const handleDropdownMouseLeave = () => {
+    dropdownTimeoutRef.current = setTimeout(() => {
+      setOpenDropdown(null);
+    }, 200);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      if (dropdownTimeoutRef.current) {
+        clearTimeout(dropdownTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const scrollToSection = (e, href) => {
+    e.preventDefault();
+    const target = document.querySelector(href);
+    if (target) {
+      const offsetTop = target.offsetTop - 80;
+      window.scrollTo({
+        top: offsetTop,
+        behavior: 'smooth'
+      });
+    }
+    setMobileMenuOpen(false);
+    setOpenDropdown(null);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Top Bar */}
-      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 text-white py-2.5 px-6">
-        <div className="container mx-auto flex items-center justify-end gap-6 text-sm">
-          <a href="tel:1.800.993.5590" className="hover:text-white/80 transition-colors font-medium">
-            1.800.993.5590
-          </a>
-          <span className="text-white/40">|</span>
-          <button className="hover:text-white/80 transition-colors font-medium">
-            Customer Login
-          </button>
-        </div>
-      </div>
-
       {/* Navigation */}
       <nav className="sticky top-0 left-0 right-0 z-50 bg-gradient-to-r from-indigo-700 via-purple-700 to-blue-700 shadow-lg">
         <div className="container mx-auto flex h-20 items-center justify-between px-6">
           {/* Logo */}
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-400 shadow-lg">
-              
               <img src={logo} alt="OutrankPilot Logo" className="h-7 w-7 rounded-full" />
             </div>
             <span className="text-2xl font-bold text-white">OutrankPilot</span>
@@ -180,24 +313,35 @@ export default function Index() {
               <div 
                 key={item.label}
                 className="relative"
-                onMouseEnter={() => item.hasDropdown && setOpenDropdown(item.label)}
-                onMouseLeave={() => setOpenDropdown(null)}
+                onMouseEnter={() => item.hasDropdown && handleMouseEnter(item.label)}
+                onMouseLeave={handleMouseLeave}
               >
                 {item.hasDropdown ? (
                   <>
-                    <button className="flex items-center gap-1 text-white hover:text-yellow-300 transition-colors font-medium text-base">
+                    <button className="text-white hover:text-yellow-300 transition-colors font-medium text-base flex items-center gap-1">
                       {item.label}
-                      <ChevronDown className="h-4 w-4" />
+                      <ChevronDown className={`h-4 w-4 transition-transform ${openDropdown === item.label ? 'rotate-180' : ''}`} />
                     </button>
+                    
                     {openDropdown === item.label && (
-                      <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-2xl py-2 border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
-                        {item.dropdownItems.map((dropdownItem) => (
+                      <div 
+                        className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 py-3 z-50"
+                        onMouseEnter={handleDropdownMouseEnter}
+                        onMouseLeave={handleDropdownMouseLeave}
+                      >
+                        {item.dropdownItems.map((dropItem) => (
                           <a
-                            key={dropdownItem.label}
-                            href={dropdownItem.href}
-                            className="block px-5 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors text-sm font-medium"
+                            key={dropItem.label}
+                            href={dropItem.href}
+                            onClick={(e) => dropItem.href.startsWith('#') && scrollToSection(e, dropItem.href)}
+                            className="flex items-center gap-3 px-5 py-3 hover:bg-indigo-50 transition-colors group"
                           >
-                            {dropdownItem.label}
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100 group-hover:bg-indigo-200 transition-colors">
+                              <dropItem.icon className="h-5 w-5 text-indigo-600" />
+                            </div>
+                            <span className="text-gray-800 font-medium group-hover:text-indigo-600 transition-colors">
+                              {dropItem.label}
+                            </span>
                           </a>
                         ))}
                       </div>
@@ -206,6 +350,7 @@ export default function Index() {
                 ) : (
                   <a 
                     href={item.href}
+                    onClick={(e) => scrollToSection(e, item.href)}
                     className="text-white hover:text-yellow-300 transition-colors font-medium text-base"
                   >
                     {item.label}
@@ -221,7 +366,7 @@ export default function Index() {
               Sign In
             </a>
             <a href="/auth" className="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-7 py-3.5 rounded-full transition-all shadow-lg hover:shadow-xl hover:scale-105 flex items-center gap-2">
-              Request a Demo
+              Get Started Free
               <ArrowRight className="h-4 w-4" />
             </a>
           </div>
@@ -237,28 +382,30 @@ export default function Index() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-white border-t border-gray-200 shadow-xl">
+          <div className="lg:hidden bg-white border-t border-gray-200 shadow-xl max-h-[80vh] overflow-y-auto">
             <div className="container mx-auto px-6 py-4">
               {navigationItems.map((item) => (
                 <div key={item.label} className="py-2 border-b border-gray-100 last:border-0">
                   {item.hasDropdown ? (
                     <>
                       <button 
-                        className="flex items-center justify-between w-full text-gray-800 font-semibold py-3"
                         onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
+                        className="flex items-center justify-between w-full text-gray-800 font-semibold py-3"
                       >
                         {item.label}
                         <ChevronDown className={`h-4 w-4 transition-transform ${openDropdown === item.label ? 'rotate-180' : ''}`} />
                       </button>
                       {openDropdown === item.label && (
-                        <div className="pl-4 mt-2 space-y-2 pb-2">
-                          {item.dropdownItems.map((dropdownItem) => (
+                        <div className="pl-4 py-2 space-y-2">
+                          {item.dropdownItems.map((dropItem) => (
                             <a
-                              key={dropdownItem.label}
-                              href={dropdownItem.href}
-                              className="block py-2 text-gray-600 hover:text-indigo-700 font-medium"
+                              key={dropItem.label}
+                              href={dropItem.href}
+                              onClick={(e) => dropItem.href.startsWith('#') && scrollToSection(e, dropItem.href)}
+                              className="flex items-center gap-3 py-2 text-gray-600 hover:text-indigo-600"
                             >
-                              {dropdownItem.label}
+                              <dropItem.icon className="h-4 w-4" />
+                              <span className="text-sm">{dropItem.label}</span>
                             </a>
                           ))}
                         </div>
@@ -267,6 +414,7 @@ export default function Index() {
                   ) : (
                     <a 
                       href={item.href}
+                      onClick={(e) => scrollToSection(e, item.href)}
                       className="block text-gray-800 font-semibold py-3"
                     >
                       {item.label}
@@ -279,7 +427,7 @@ export default function Index() {
                   Sign In
                 </a>
                 <a href="/auth" className="block w-full bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-6 py-3.5 rounded-full transition-all shadow-lg text-center">
-                  Request a Demo
+                  Get Started Free
                 </a>
               </div>
             </div>
@@ -288,7 +436,7 @@ export default function Index() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-24 pb-20 overflow-hidden">
+      <section id="hero" className="relative pt-24 pb-20 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-100/50 via-purple-100/30 to-blue-100/50"></div>
         
         <div className="container relative mx-auto px-6 z-10">
@@ -315,13 +463,10 @@ export default function Index() {
                 Start Free Trial
                 <ArrowRight className="h-5 w-5" />
               </a>
-              <button className="bg-white hover:bg-gray-50 text-gray-900 font-bold px-8 py-4 rounded-full transition-all border-2 border-gray-300 shadow-lg hover:shadow-xl text-lg">
-                Watch Demo
-              </button>
             </div>
 
             <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-600">
-              {['No credit card required', '14-day free trial', 'Cancel anytime'].map((item) => (
+              {['No credit card required', '7-day free trial', 'Cancel anytime'].map((item) => (
                 <div key={item} className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-green-500" />
                   <span className="font-medium">{item}</span>
@@ -332,8 +477,69 @@ export default function Index() {
         </div>
       </section>
 
+      {/* With vs Without Comparison Section */}
+      <section id="comparison" className="py-24 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              How OutrankPilot Stacks Up
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              See why modern teams choose true content automation over manual and basic AI tools
+            </p>
+          </div>
+
+          <div className="max-w-6xl mx-auto overflow-x-auto">
+            <table className="w-full border-collapse bg-white rounded-2xl shadow-xl overflow-hidden">
+              {/* Table Header */}
+              <thead>
+                <tr className="bg-gray-800">
+                  <th className="text-left p-6 font-bold text-white text-lg border-r border-gray-700"></th>
+                  <th className="text-center p-6 font-bold text-white text-lg border-r border-gray-700">
+                    Manual Content<br/>Creation
+                  </th>
+                  <th className="text-center p-6 font-bold text-white text-lg border-r border-gray-700">
+                    Basic AI Writers
+                  </th>
+                  <th className="text-center p-6 font-bold text-white text-lg bg-gradient-to-r from-indigo-600 to-purple-600">
+                    OUTRANKPILOT<br/>Autopilot
+                  </th>
+                </tr>
+              </thead>
+
+              {/* Table Body */}
+              <tbody>
+                {comparisonData.map((row, index) => (
+                  <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                    <td className="p-5 font-bold text-gray-900 border-r border-b border-gray-200">
+                      {row.category}
+                    </td>
+                    <td className="p-5 text-center text-gray-700 border-r border-b border-gray-200">
+                      {row.manual}
+                    </td>
+                    <td className="p-5 text-center text-gray-700 border-r border-b border-gray-200">
+                      {row.basic}
+                    </td>
+                    <td className="p-5 text-center font-semibold text-indigo-900 bg-indigo-50 border-b border-indigo-200">
+                      {row.outrank}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-12 text-center">
+            <a href="/plans" className="inline-flex bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold px-8 py-4 rounded-full transition-all shadow-xl hover:shadow-2xl hover:scale-105 items-center gap-2">
+              Start Your Free Trial
+              <ArrowRight className="h-5 w-5" />
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
-      <section id="features" className="py-24 bg-white">
+      <section id="features" className="py-24 bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -348,6 +554,7 @@ export default function Index() {
             {features.map((feature) => (
               <div 
                 key={feature.title}
+                id={feature.id}
                 className="bg-gradient-to-br from-white to-indigo-50/50 p-8 rounded-2xl border border-gray-200 hover:border-indigo-300 group cursor-pointer hover:shadow-2xl transition-all"
               >
                 <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 group-hover:scale-110 transition-transform shadow-lg">
@@ -362,29 +569,48 @@ export default function Index() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-24 bg-gradient-to-br from-slate-50 to-blue-50">
+      <section id="how-it-works" className="py-24 bg-white">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              How It Works
+            <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: '#6B46FF' }}>
+              HOW DOES IT WORK?
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              From zero to published content in four simple steps.
+            <p className="text-2xl font-semibold text-gray-700">
+              FACELESS CHANNELS ON AUTO-PILOT
             </p>
           </div>
 
-          <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
+          <div className="max-w-6xl mx-auto space-y-32">
             {steps.map((step, index) => (
-              <div key={step.step} className="relative text-center group">
-                {index < steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-16 left-[55%] w-24 h-1 bg-gradient-to-r from-indigo-400 to-purple-400 z-0" />
-                )}
-                <div className="relative z-10">
-                  <div className="mb-6 mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-400 flex items-center justify-center shadow-xl group-hover:scale-110 transition-all">
-                    <span className="text-2xl font-black text-gray-900">{step.step}</span>
+              <div 
+                key={step.step}
+                className={`flex flex-col ${index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'} items-center gap-12 lg:gap-16`}
+              >
+                {/* Content Side */}
+                <div className="flex-1 space-y-6">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white border-4 border-purple-600 text-1xl font-bold text-purple-600 shadow-lg">
+                    Step {step.step}
                   </div>
-                  <h3 className="mb-4 text-xl font-bold text-gray-900">{step.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{step.description}</p>
+                  <h3 className="text-3xl font-bold text-gray-900">
+                    {step.title}
+                  </h3>
+                  <p className="text-lg text-gray-600 leading-relaxed">
+                    {step.description}
+                  </p>
+                </div>
+
+                {/* Visual Side */}
+                <div className="flex-1">
+                  <div className="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl p-8 shadow-2xl border-4 border-indigo-200">
+                    <div className="bg-gray-900 rounded-2xl p-8 min-h-[300px] flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-6xl mb-4">📊</div>
+                        <p className="text-white text-lg font-semibold">
+                          {step.title}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -393,7 +619,7 @@ export default function Index() {
       </section>
 
       {/* Integrations */}
-      <section id="integrations" className="py-24 bg-white">
+      <section id="integrations" className="py-24 bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -418,7 +644,7 @@ export default function Index() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-24 bg-gradient-to-br from-slate-50 to-blue-50">
+      <section id="pricing" className="py-24 bg-white">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -485,7 +711,7 @@ export default function Index() {
       </section>
 
       {/* CTA Section */}
-      <section id="contact" className="py-24 bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600">
+      <section id="cta" className="py-24 bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
@@ -494,7 +720,7 @@ export default function Index() {
             <p className="text-xl text-white/90 mb-10 leading-relaxed max-w-2xl mx-auto">
               Join thousands of content creators using AI to create SEO-optimized content that ranks.
             </p>
-            <a href="/plans" className="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-10 py-5 rounded-full transition-all shadow-2xl hover:shadow-3xl hover:scale-105 flex items-center gap-2 mx-auto text-lg">
+            <a href="/plans" className="inline-flex bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-10 py-5 rounded-full transition-all shadow-2xl hover:shadow-3xl hover:scale-105 items-center gap-2 text-lg">
               Start Your Free Trial
               <ArrowRight className="h-5 w-5" />
             </a>
@@ -503,19 +729,83 @@ export default function Index() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 py-12 bg-white">
+      <footer className="border-t border-gray-200 py-16 bg-gray-900">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 shadow-lg">
-                <img src={logo} alt="OutrankPilot Logo" className="h-7 w-7 rounded-full" />
-                
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
+            {/* Brand Column */}
+            <div className="lg:col-span-2">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 shadow-lg">
+                  <img src={logo} alt="OutrankPilot Logo" className="h-7 w-7 rounded-full" />
+                </div>
+                <span className="text-2xl font-bold text-white">OutrankPilot</span>
               </div>
-              <span className="text-2xl font-bold text-gray-900">OutrankPilot</span>
+              <p className="text-gray-400 mb-6 leading-relaxed">
+                AI-powered SEO content generation platform helping businesses create content that ranks.
+              </p>
+              <div className="flex gap-4">
+                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gray-800 hover:bg-indigo-600 flex items-center justify-center transition-colors">
+                  <Linkedin className="h-5 w-5 text-gray-300" />
+                </a>
+                <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gray-800 hover:bg-indigo-600 flex items-center justify-center transition-colors">
+                  <Twitter className="h-5 w-5 text-gray-300" />
+                </a>
+                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gray-800 hover:bg-indigo-600 flex items-center justify-center transition-colors">
+                  <Facebook className="h-5 w-5 text-gray-300" />
+                </a>
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gray-800 hover:bg-indigo-600 flex items-center justify-center transition-colors">
+                  <Instagram className="h-5 w-5 text-gray-300" />
+                </a>
+              </div>
             </div>
-            <p className="text-base text-gray-600 text-center md:text-right">
-              © 2026 OutrankPilot. All rights reserved.
-            </p>
+
+            {/* Product Column */}
+            <div>
+              <h4 className="text-white font-bold text-lg mb-4">Product</h4>
+              <ul className="space-y-3">
+                <li><a href="#features" onClick={(e) => scrollToSection(e, '#features')} className="text-gray-400 hover:text-indigo-400 transition-colors">Features</a></li>
+                <li><a href="#pricing" onClick={(e) => scrollToSection(e, '#pricing')} className="text-gray-400 hover:text-indigo-400 transition-colors">Pricing</a></li>
+                <li><a href="#integrations" onClick={(e) => scrollToSection(e, '#integrations')} className="text-gray-400 hover:text-indigo-400 transition-colors">Integrations</a></li>
+                <li><a href="/plans" className="text-gray-400 hover:text-indigo-400 transition-colors">Plans</a></li>
+              </ul>
+            </div>
+
+            {/* Resources Column */}
+            <div>
+              <h4 className="text-white font-bold text-lg mb-4">Resources</h4>
+              <ul className="space-y-3">
+                <li><a href="/blog" className="text-gray-400 hover:text-indigo-400 transition-colors">Blog</a></li>
+                <li><a href="/public-services" className="text-gray-400 hover:text-indigo-400 transition-colors">Public Services</a></li>
+                <li><a href="#how-it-works" onClick={(e) => scrollToSection(e, '#how-it-works')} className="text-gray-400 hover:text-indigo-400 transition-colors">How it Works</a></li>
+                <li><a href="/support" className="text-gray-400 hover:text-indigo-400 transition-colors">Support</a></li>
+                <li><a href="/affiliate-program" className="text-gray-400 hover:text-indigo-400 transition-colors">Affiliate Program</a></li>
+              </ul>
+            </div>
+
+            {/* Company Column */}
+            <div>
+              <h4 className="text-white font-bold text-lg mb-4">Company</h4>
+              <ul className="space-y-3">
+                <li><a href="#" className="text-gray-400 hover:text-indigo-400 transition-colors">About Us</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-indigo-400 transition-colors">Contact</a></li>
+                <li><a href="/privacy" className="text-gray-400 hover:text-indigo-400 transition-colors">Privacy Policy</a></li>
+                <li><a href="/privacy" className="text-gray-400 hover:text-indigo-400 transition-colors">Terms of Service</a></li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="pt-8 border-t border-gray-800">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <p className="text-gray-400 text-sm">
+                © 2026 OutrankPilot. All rights reserved.
+              </p>
+              <div className="flex items-center gap-6">
+                <a href="/privacy" className="text-gray-400 hover:text-indigo-400 text-sm transition-colors">Privacy Policy</a>
+                <a href="/privacy" className="text-gray-400 hover:text-indigo-400 text-sm transition-colors">Terms</a>
+                <a href="#" className="text-gray-400 hover:text-indigo-400 text-sm transition-colors">Cookies</a>
+              </div>
+            </div>
           </div>
         </div>
       </footer>

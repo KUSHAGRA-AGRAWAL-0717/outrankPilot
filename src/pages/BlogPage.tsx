@@ -45,10 +45,6 @@ const BlogPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Add "Load More" or Infinite Scroll Hook Here */}
-      <div className="text-center mt-24">
-        <button className="btn-primary px-12 py-6 text-xl font-semibold">Load More Posts</button>
-      </div>
     </div>
   );
 };

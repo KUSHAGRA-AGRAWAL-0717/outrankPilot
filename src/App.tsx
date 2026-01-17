@@ -27,13 +27,14 @@ import Autopilot from "./pages/Autopilot.js";
 import AdminGuard from "@/components/AdminGuard";
 import AdminPage from "./pages/AdminPage";
 import Onboarding from "./pages/Onboarding.js";
+import Support from "./pages/Support";
+import Affiliate from "./pages/Affiliate";
+import Examples from "./pages/Examples";
+import Features from "./pages/Features";
 
-// import StepIntegrations from "./pages/FilesBoard/StepIntegrations.js";
-// import StepContent from "./pages/FilesBoard/StepBlogsArticles.js";
-// import StepProject from "./pages/FilesBoard/StepProject.js";
-// import StepKeywords from "./pages/FilesBoard/StepAudienceCompetitors.js";
 import { DashboardLayout } from "./components/layout/DashboardLayout.js";
 import Integrations from "./pages/Integrations.jsx";
+import BlogPostPage from "./pages/BlogPostPage.js";
 
 const PageWithSidebar = ({ children }) => {
   return <DashboardLayout>{children}</DashboardLayout>;
@@ -55,6 +56,11 @@ const App = () => (
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/public-services" element={<PublicServicesPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/blog/:slug" element={<BlogPostPage />} />
+            <Route path="/affiliate-program" element={<Affiliate />} />
+            <Route path="/support" element={<Support />} />
+            <Route path="/examples" element={<Examples />} />
+            <Route path="/features/:id" element={<Features />} />
             <Route
               path="/auth/notion/callback"
               element={<AuthNotionCallback />}

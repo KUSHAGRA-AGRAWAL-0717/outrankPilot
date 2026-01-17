@@ -199,9 +199,9 @@ export default function Auth() {
         <div className="relative z-10 max-w-md">
           <div className="flex items-center gap-3 mb-8">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FFD84D] shadow-lg">
-              <img src={logo} alt="Outrank Logo" className="h-9 w-9 rounded-full" />
+              <img src={logo} alt="Outrank Logo" className="h-12 w-12 rounded-full" />
             </div>
-            <span className="text-3xl font-bold text-white">Outrank</span>
+            <span className="text-3xl font-bold text-white">OutrankPilot</span>
           </div>
           
           <h1 className="text-5xl font-bold text-white mb-6 leading-tight">
@@ -219,6 +219,7 @@ export default function Auth() {
               'SERP analysis & competitor insights',
               '3,500+ word comprehensive briefs',
               'One-click WordPress publishing',
+              'Autopublish & scheduling'
             ].map((feature) => (
               <div key={feature} className="flex items-center gap-3">
                 <CheckCircle2 className="h-6 w-6 text-[#3EF0C1] flex-shrink-0" />

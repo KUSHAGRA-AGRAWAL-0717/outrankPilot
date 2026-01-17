@@ -340,7 +340,7 @@ export default function Autopilot() {
                       value={notionToken}
                       onChange={(e) => setNotionToken(e.target.value)}
                       placeholder="secret_xxxxxxxxxxxxxxxxxxxxx"
-                      className="pr-10 font-mono text-sm"
+                      className="pr-10 font-mono text-white bg-white"
                     />
                     <button
                       type="button"
@@ -362,7 +362,7 @@ export default function Autopilot() {
                     value={notionDatabaseId}
                     onChange={(e) => setNotionDatabaseId(e.target.value)}
                     placeholder="2e428d3dffaf8090b203000ca31462d1"
-                    className="font-mono text-sm"
+                    className="font-mono text-white bg-white"
                   />
                   <p className="text-xs text-[#8A94B3] mt-1">
                     Copy from Notion URL: notion.so/workspace/<strong className="bg-yellow-200">DATABASE_ID</strong>?v=...
@@ -442,7 +442,7 @@ export default function Autopilot() {
                         type="time"
                         value={autopilotTime}
                         onChange={(e) => setAutopilotTime(e.target.value)}
-                        className="flex-1 h-12"
+                        className="flex-1 h-12 bg-white"
                       />
                       <Button
                         size="sm"

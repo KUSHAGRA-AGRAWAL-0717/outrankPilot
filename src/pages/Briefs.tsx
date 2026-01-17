@@ -9,7 +9,8 @@ import {
   Trash2,
   Eye,
   Loader2,
-  Copy 
+  Copy, 
+  ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -222,7 +223,7 @@ export default function Briefs({
 
     setPublishing(briefId);
     try {
-      const { error: functionError } = await supabase.functions.invoke("publish-to-wordpress", {
+      const { error: functionError } = await supabase.functions.invoke("publish", {
         body: { 
           briefId, 
           projectId: effectiveProjectId,
@@ -535,9 +536,7 @@ export default function Briefs({
                     >
                       <Edit3 className="h-4 w-4" />
                     </Button>
-                    <Button className="h-8 w-8 p-0 bg-transparent hover:bg-[#F6F8FC] text-[#5B6B8A]">
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    
                     <Button 
                       className="h-8 w-8 p-0 bg-transparent hover:bg-red-50 text-red-500"
                       onClick={() => handleDelete(brief.id)}
@@ -590,6 +589,13 @@ export default function Briefs({
                     Generate Brief
                   </Button>
                 )}
+
+                {brief.status === 'generated' && (
+  <div className="flex items-center gap-2 text-xs text-[#5B6B8A] mb-2">
+    <ImageIcon className="h-3 w-3" />
+    <span>Images included</span>
+  </div>
+)}
 
                 {brief.status === 'published' && brief.wp_post_url && (
                   <Button 

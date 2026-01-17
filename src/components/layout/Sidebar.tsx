@@ -22,7 +22,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Keywords", href: "/keywords", icon: Search },
   { name: "Content Briefs", href: "/briefs", icon: FileText },
-  { name: "Calendar", href: "/calendar", icon: Calendar },
+  { name: "Content Planner", href: "/calendar", icon: Calendar },
   { name: "Competitor Analysis", href: "/competitor-analysis", icon: Globe },
   { name: "Autopilot", href: "/autopilot", icon: Zap },
   { name: "Integrations", href: "/integrations", icon: Settings },

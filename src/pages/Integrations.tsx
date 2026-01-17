@@ -182,7 +182,7 @@ export default function Settings() {
               <div className="space-y-4 max-w-md">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-black">Full Name</label>
-                  <Input placeholder="Your name" />
+                  <Input placeholder="Your name" className="bg-white text-black" />
                 </div>
                 <Button className="w-full" variant="outline">Save Changes</Button>
               </div>

@@ -44,26 +44,26 @@ serve(async (req) => {
       );
     }
 
-    // 🚀 Enqueue brief generation
-    await enqueue("generate-brief", {
-      keyword,
-      keywordId,
-      projectId,
-      userId,
-    });
+   // In your edge function, after content generation:
+const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=800&height=600&nologo=true`;
 
-    await supabase.from("audit_logs").insert({
-      actor_id: userId,
-      action: "GENERATE_BRIEF",
-      target_id: projectId,
-    });
+// Store in content_assets
+await supabase.from("content_assets").insert({
+  id: crypto.randomUUID(),
+  project_id: projectId,
+  brief_id: briefData.id, // Add this column to content_assets
+  type: "image",
+  url: imageUrl,
+  alt_text: imagePrompt
+});
+
 
     return new Response(
-      JSON.stringify({ success: true, queued: true }),
+      JSON.stringify({ success: true, imageUrl }),
       { headers: corsHeaders }
     );
   } catch (error) {
-    console.error("generate-brief error:", error);
+    console.error("generate-image error:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: corsHeaders }

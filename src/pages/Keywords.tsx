@@ -32,7 +32,6 @@ export default function Keywords({
   const { currentProject, user } = useApp();
   const navigate = useNavigate();
 
-  // Use propProjectId in onboarding mode, otherwise use currentProject
   const effectiveProjectId = onboardingMode ? propProjectId : currentProject?.id;
 
   const [keywords, setKeywords] = useState<KeywordData[]>([]);
@@ -40,6 +39,7 @@ export default function Keywords({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [hasAddedKeyword, setHasAddedKeyword] = useState(false);
+  const [generatingBriefs, setGeneratingBriefs] = useState<Set<string>>(new Set());
 
   const loadKeywords = async () => {
     if (!effectiveProjectId) {
@@ -58,7 +58,6 @@ export default function Keywords({
 
       setKeywords(data ?? []);
       
-      // If in onboarding mode and keywords exist, mark as submitted
       if (onboardingMode && data && data.length > 0) {
         setHasAddedKeyword(true);
       }
@@ -79,9 +78,13 @@ export default function Keywords({
     
     loadKeywords();
 
-    // Realtime subscription for keyword status updates
+    // Realtime subscription with error handling and status monitoring
     const channel = supabase
-      .channel(`keyword-status-updates-${effectiveProjectId}`)
+      .channel(`keyword-updates-${effectiveProjectId}`, {
+        config: {
+          broadcast: { self: true }
+        }
+      })
       .on(
         "postgres_changes",
         {
@@ -91,6 +94,7 @@ export default function Keywords({
           filter: `project_id=eq.${effectiveProjectId}`,
         },
         (payload) => {
+          
           setKeywords((prev) =>
             prev.map((k) => (k.id === payload.new.id ? { ...k, ...payload.new } : k))
           );
@@ -105,12 +109,31 @@ export default function Keywords({
           filter: `project_id=eq.${effectiveProjectId}`,
         },
         (payload) => {
-          setKeywords((prev) => [payload.new as KeywordData, ...prev]);
+         
+          // Only add if not already in list (optimistic update already added it)
+          setKeywords((prev) => {
+            const exists = prev.some((k) => k.id === payload.new.id);
+            if (exists) {
+              return prev.map((k) => (k.id === payload.new.id ? { ...k, ...payload.new } : k));
+            }
+            return [payload.new as KeywordData, ...prev];
+          });
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        
+        if (err) {
+          console.error("Realtime subscription error:", err);
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.error("Channel error - retrying subscription");
+          // Optionally reload data
+          loadKeywords();
+        }
+      });
 
     return () => {
+      
       supabase.removeChannel(channel);
     };
   }, [effectiveProjectId]);
@@ -143,7 +166,6 @@ export default function Keywords({
     setSubmitting(true);
 
     try {
-      // Insert keyword with queued status
       const { data: keywordData, error: insertError } = await supabase
         .from("keywords")
         .insert({
@@ -158,16 +180,19 @@ export default function Keywords({
       if (insertError) throw insertError;
 
       setNewKeyword("");
-      setKeywords((prev) => [keywordData, ...prev]);
       setHasAddedKeyword(true);
-      toast.success("Keyword added, analyzing...");
+      
+      // Optimistically update state to "analyzing"
+      const analyzingKeyword = { ...keywordData, status: "analyzing" as const };
+      setKeywords((prev) => [analyzingKeyword, ...prev]);
+      
+      toast.success("Analyzing keyword...");
 
-      // Call onSubmit callback in onboarding mode after first keyword
       if (onboardingMode && onSubmit && !hasAddedKeyword) {
         onSubmit();
       }
 
-      // Directly invoke edge function for analysis
+      // Invoke edge function
       const { error: functionError } = await supabase.functions.invoke(
         "analyze-keywords",
         {
@@ -181,13 +206,36 @@ export default function Keywords({
 
       if (functionError) {
         console.error("Analysis function error:", functionError);
-        // Update status to failed
-        await supabase
-          .from("keywords")
-          .update({ status: "failed" })
-          .eq("id", keywordData.id);
-        
+        setKeywords((prev) =>
+          prev.map((k) => (k.id === keywordData.id ? { ...k, status: "failed" } : k))
+        );
         toast.error("Keyword analysis failed. Check your API keys.");
+      } else {
+        // Poll for status update as backup if realtime fails
+        setTimeout(() => {
+          supabase
+            .from("keywords")
+            .select("status, volume, difficulty, cpc, intent, priority_score")
+            .eq("id", keywordData.id)
+            .single()
+            .then(({ data }) => {
+              if (data) {
+                setKeywords((prev) =>
+                  prev.map((k) =>
+                    k.id === keywordData.id
+                      ? {
+                          ...k,
+                          ...data,
+                          status: (["queued", "analyzing", "ready", "generated", "failed"].includes(data.status)
+                            ? data.status
+                            : "queued") as KeywordData["status"],
+                        }
+                      : k
+                  )
+                );
+              }
+            });
+        }, 3000); // Poll after 3 seconds
       }
     } catch (err: any) {
       console.error(err);
@@ -203,21 +251,22 @@ export default function Keywords({
       return;
     }
 
-    if (k.status !== "ready") {
-      toast.error("Please wait for keyword analysis to complete");
+    if (k.status !== "ready" || generatingBriefs.has(k.id)) {
       return;
     }
 
+    setGeneratingBriefs((prev) => new Set(prev).add(k.id));
+
     try {
-      // Update keyword status to analyzing (for brief generation)
-      await supabase
-        .from("keywords")
-        .update({ status: "analyzing" })
-        .eq("id", k.id);
+      // Optimistically update local state
+      setKeywords((prev) =>
+        prev.map((keyword) =>
+          keyword.id === k.id ? { ...keyword, status: "analyzing" } : keyword
+        )
+      );
 
-      toast.success("Brief generation started");
+      toast.success("Generating brief...");
 
-      // Directly invoke edge function for brief generation
       const { error: functionError } = await supabase.functions.invoke(
         "generate-brief",
         {
@@ -232,17 +281,53 @@ export default function Keywords({
 
       if (functionError) {
         console.error("Brief generation error:", functionError);
-        // Revert status back to ready
-        await supabase
-          .from("keywords")
-          .update({ status: "ready" })
-          .eq("id", k.id);
-        
+        setKeywords((prev) =>
+          prev.map((keyword) =>
+            keyword.id === k.id ? { ...keyword, status: "ready" } : keyword
+          )
+        );
         toast.error("Failed to generate brief");
+      } else {
+        // Poll for status update as backup
+        setTimeout(() => {
+          supabase
+            .from("keywords")
+            .select("status")
+            .eq("id", k.id)
+            .single()
+            .then(({ data }) => {
+              if (data) {
+                setKeywords((prev) =>
+                  prev.map((keyword) =>
+                    keyword.id === k.id
+                      ? {
+                          ...keyword,
+                          ...data,
+                          status: (["queued", "analyzing", "ready", "generated", "failed"].includes(data.status)
+                            ? data.status
+                            : "queued") as KeywordData["status"],
+                        }
+                      : keyword
+                  )
+                );
+              }
+            });
+        }, 3000);
       }
     } catch (e: any) {
       console.error(e);
+      setKeywords((prev) =>
+        prev.map((keyword) =>
+          keyword.id === k.id ? { ...keyword, status: "ready" } : keyword
+        )
+      );
       toast.error("Failed to start brief generation");
+    } finally {
+      setGeneratingBriefs((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(k.id);
+        return newSet;
+      });
     }
   };
 
@@ -475,10 +560,10 @@ export default function Keywords({
                       <td className="p-4 text-right">
                         <Button
                           size="sm"
-                          disabled={k.status !== "ready"}
+                          disabled={k.status !== "ready" || generatingBriefs.has(k.id)}
                           className={k.status === "generated" 
-                            ? "bg-[#F6F8FC] text-[#3EF0C1] border border-[#3EF0C1]/30"
-                            : "bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] font-semibold disabled:bg-gray-300 disabled:text-gray-500"
+                            ? "bg-[#F6F8FC] text-[#3EF0C1] border border-[#3EF0C1]/30 cursor-not-allowed"
+                            : "bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] font-semibold disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
                           }
                           onClick={() => handleGenerateBrief(k)}
                         >
@@ -487,8 +572,11 @@ export default function Keywords({
                               <CheckCircle2 className="h-4 w-4" />
                               Generated ✓
                             </span>
-                          ) : k.status === "analyzing" ? (
-                            "Processing..."
+                          ) : generatingBriefs.has(k.id) || k.status === "analyzing" ? (
+                            <span className="flex items-center gap-1">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Generating...
+                            </span>
                           ) : k.status === "ready" ? (
                             "Generate Brief"
                           ) : (
