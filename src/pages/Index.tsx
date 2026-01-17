@@ -171,7 +171,7 @@ const navigationItems = [
       { icon: Target, label: 'How it Works', href: '#how-it-works' },
       { icon: Settings, label: 'Integrations', href: '#integrations' },
       { icon: MessageSquare, label: 'Support Ticket', href: '/support' },
-      { icon: Gift, label: 'Affiliate Program', href: '/affiliate-programme' }
+      { icon: Gift, label: 'Affiliate Program', href: '/affiliate-program' }
     ]
   },
   {
