@@ -154,26 +154,7 @@ export default function Features() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-gradient-to-r from-indigo-700 via-purple-700 to-blue-700 shadow-lg">
-        <div className="container mx-auto flex h-20 items-center justify-between px-6">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-400 shadow-lg">
-              <img src={logo} alt="OutrankPilot Logo" className="h-7 w-7 rounded-full" />
-            </div>
-            <span className="text-2xl font-bold text-white">OutrankPilot</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/auth')} className="text-white hover:text-yellow-300 transition-colors font-medium">
-              Sign In
-            </button>
-            <button onClick={() => navigate('/auth')} className="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-7 py-3.5 rounded-full transition-all shadow-lg hover:shadow-xl hover:scale-105 flex items-center gap-2">
-              Get Started Free
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </header>
+      
 
       {/* Hero Section */}
       <section className="relative pt-24 pb-16 overflow-hidden">
@@ -240,7 +221,7 @@ export default function Features() {
 
                 <div className="pt-6">
                   <button 
-                    onClick={() => navigate('/auth')}
+                    onClick={() => navigate('/plans')}
                     className={`bg-gradient-to-r ${feature.color} hover:opacity-90 text-white font-bold px-8 py-4 rounded-full transition-all shadow-xl hover:shadow-2xl hover:scale-105 flex items-center gap-2`}
                   >
                     Try This Feature

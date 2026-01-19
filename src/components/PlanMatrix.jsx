@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
-import { Check, Zap, Building2, Sparkles, AlertCircle } from "lucide-react";
+import {
+  Check,
+  Zap,
+  Building2,
+  Sparkles,
+  AlertCircle,
+  Star,
+  ArrowRight,
+  Shield,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const BASE_PLANS = [
@@ -9,7 +18,9 @@ const BASE_PLANS = [
     priceUsd: 99,
     icon: Sparkles,
     popular: false,
-    description: "Starter package with AI articles and basic integrations.",
+    badge: "Starter",
+    description:
+      "Perfect for individuals and small teams getting started with AI content.",
     features: [
       "30 AI articles per month",
       "Unlimited team members",
@@ -20,17 +31,17 @@ const BASE_PLANS = [
       "AI-generated images",
       "YouTube video integration",
       "150+ languages",
-      "30 SEO-optimized articles monthly"
+      "Email support",
     ],
-    limits: { 
-      projects: 3, 
-      keywords: 500, 
-      articles: 30, 
+    limits: {
+      projects: 3,
+      keywords: 500,
+      articles: 30,
       wpSites: 1,
       autoPublish: false,
       aiImages: true,
-      languagesLimit: 150
-    }
+      languagesLimit: 150,
+    },
   },
   {
     id: "grow",
@@ -38,25 +49,29 @@ const BASE_PLANS = [
     priceUsd: 299,
     icon: Zap,
     popular: true,
-    description: "Everything in Essential plus backlinks and auto-publishing.",
+    badge: "Most Popular",
+    description:
+      "Ideal for growing businesses that need more content and advanced features.",
     features: [
       "Everything in Essential",
       "60 AI articles per month",
-      "High DR backlinks",
       "3 WordPress sites",
       "Daily auto-publishing",
       "Backlink Exchange",
-      "60 articles auto-published monthly"
+      "Priority support",
+      "Advanced analytics",
+      "Custom branding",
+      "API access",
     ],
-    limits: { 
-      projects: 10, 
-      keywords: 2000, 
-      articles: 60, 
+    limits: {
+      projects: 10,
+      keywords: 2000,
+      articles: 60,
       wpSites: 3,
       autoPublish: true,
       aiImages: true,
-      languagesLimit: 150
-    }
+      languagesLimit: 150,
+    },
   },
   {
     id: "premium",
@@ -64,26 +79,31 @@ const BASE_PLANS = [
     priceUsd: 599,
     icon: Building2,
     popular: false,
-    description: "Unlimited publishing with advanced integrations.",
+    badge: "Enterprise",
+    description:
+      "For agencies and enterprises requiring unlimited content and integrations.",
     features: [
       "Everything in Grow",
       "Unlimited AI articles",
-      "Ghost, Webflow, Notion, Wix, Shopify integrations",
+      "Ghost, Webflow, Notion integration",
+      "Wix, Shopify integration",
       "Webhook support",
       "Frame integration",
       "Priority feature requests",
-      "Unlimited WordPress sites"
+      "Unlimited WordPress sites",
+      "Dedicated account manager",
+      "Custom integrations",
     ],
-    limits: { 
-      projects: 9999, 
-      keywords: 999999, 
-      articles: -1, 
+    limits: {
+      projects: 9999,
+      keywords: 999999,
+      articles: -1,
       wpSites: -1,
       autoPublish: true,
       aiImages: true,
-      languagesLimit: 150
-    }
-  }
+      languagesLimit: 150,
+    },
+  },
 ];
 
 export default function PlanMatrix() {
@@ -92,6 +112,7 @@ export default function PlanMatrix() {
   const [user, setUser] = useState(null);
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const [error, setError] = useState(null);
+  const [billingCycle, setBillingCycle] = useState("monthly"); // Fixed: removed TypeScript syntax
 
   useEffect(() => {
     checkUser();
@@ -99,9 +120,11 @@ export default function PlanMatrix() {
   }, []);
 
   const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     setUser(user);
-    
+
     if (user) {
       const { data } = await supabase
         .from("subscriptions")
@@ -125,12 +148,14 @@ export default function PlanMatrix() {
 
   const formatPrice = (priceUsd) => {
     if (priceUsd === 0) return "Free";
-    const converted = Number(priceUsd) * Number(currency.rate || 1);
+    const multiplier = billingCycle === "yearly" ? 10 : 1; // 2 months free on yearly
+    const converted =
+      Number(priceUsd) * Number(currency.rate || 1) * multiplier;
     try {
       return new Intl.NumberFormat(undefined, {
         style: "currency",
         currency: currency.code,
-        maximumFractionDigits: 0
+        maximumFractionDigits: 0,
       }).format(converted);
     } catch {
       return `${currency.code} ${converted.toFixed(0)}`;
@@ -147,17 +172,16 @@ export default function PlanMatrix() {
     setError(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { planId }
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "create-checkout",
+        {
+          body: { planId, billingCycle },
+        },
+      );
 
       if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      // Redirect to Paystack checkout
       if (data.checkout_url) {
         window.location.href = data.checkout_url;
       }
@@ -169,99 +193,191 @@ export default function PlanMatrix() {
   };
 
   const isCurrentPlan = (planId) => {
-    return currentSubscription?.plan === planId && currentSubscription?.status === "active";
+    return (
+      currentSubscription?.plan === planId &&
+      currentSubscription?.status === "active"
+    );
   };
 
   return (
-    <div className="py-24 px-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
-      <div className="text-center mb-16">
-        <h1 className="text-5xl font-bold text-slate-900 mb-4">Simple, Transparent Pricing</h1>
-        <p className="text-xl text-slate-600">Choose the plan that fits your growth</p>
-        <p className="text-sm text-slate-500 mt-2">7-day trial period • Cancel anytime</p>
+    <div className="pb-20 px-6">
+      {/* Billing Toggle */}
+      <div className="flex justify-center items-center gap-4 mb-12">
+        <span
+          className={`font-medium ${billingCycle === "monthly" ? "text-slate-900" : "text-slate-500"}`}
+        >
+          Monthly
+        </span>
+        <button
+          onClick={() =>
+            setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")
+          }
+          className={`relative w-16 h-8 rounded-full transition-colors ${
+            billingCycle === "yearly" ? "bg-blue-600" : "bg-slate-300"
+          }`}
+        >
+          <div
+            className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${
+              billingCycle === "yearly" ? "translate-x-8" : ""
+            }`}
+          />
+        </button>
+        <span
+          className={`font-medium ${billingCycle === "yearly" ? "text-slate-900" : "text-slate-500"}`}
+        >
+          Yearly
+          <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold">
+            Save 17%
+          </span>
+        </span>
       </div>
 
       {error && (
-        <div className="max-w-2xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+        <div className="max-w-4xl mx-auto mb-8 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <p className="text-red-800 text-sm">{error}</p>
+          <div>
+            <p className="text-red-900 font-medium">Payment Error</p>
+            <p className="text-red-700 text-sm mt-1">{error}</p>
+          </div>
         </div>
       )}
 
-      <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+      {/* Pricing Cards */}
+      <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-7xl mx-auto text-black">
         {BASE_PLANS.map((plan) => {
           const Icon = plan.icon;
           const isCurrent = isCurrentPlan(plan.id);
-          
+
           return (
             <div
               key={plan.id}
-              className={`relative flex flex-col p-8 rounded-2xl transition-all duration-300 bg-white ${
+              className={`relative flex flex-col rounded-2xl transition-all duration-300 bg-white ${
                 plan.popular
-                  ? "border-2 border-blue-500 ring-4 ring-blue-100 shadow-2xl scale-105 z-10"
-                  : "border border-slate-200 hover:border-blue-300 hover:shadow-xl"
+                  ? "border-2 border-blue-600 shadow-2xl md:scale-105 z-10"
+                  : "border border-slate-200 shadow-lg hover:shadow-xl hover:border-blue-300"
               }`}
             >
+              {/* Popular Badge */}
               {plan.popular && (
-                <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
-                  Most Popular
-                </span>
+                <div className="absolute -top-5 left-0 right-0 flex justify-center">
+                  <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg flex items-center gap-2">
+                    <Star className="h-4 w-4 fill-current" />
+                    {plan.badge}
+                  </div>
+                </div>
               )}
 
-              <div className="mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${
-                    plan.popular ? "bg-blue-600" : "bg-slate-800"
-                  }`}>
-                    <Icon className="h-6 w-6 text-white" />
+              <div className="p-8">
+                {/* Plan Header */}
+                <div className="mb-6">
+                  <div
+                    className={`inline-flex h-14 w-14 items-center justify-center rounded-xl mb-4 ${
+                      plan.popular
+                        ? "bg-gradient-to-br from-blue-600 to-blue-500"
+                        : "bg-gradient-to-br from-slate-700 to-slate-900"
+                    }`}
+                  >
+                    <Icon className="h-7 w-7 text-black" />
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-900">{plan.name}</h3>
-                </div>
-                <p className="text-sm text-slate-600 leading-relaxed">{plan.description}</p>
-              </div>
 
-              <div className="mb-8">
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-5xl font-bold text-slate-900">{formatPrice(plan.priceUsd)}</span>
-                  <span className="text-slate-600 font-medium">/month</span>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                    {plan.name}
+                  </h3>
+                  <p className="text-slate-600 text-sm leading-relaxed">
+                    {plan.description}
+                  </p>
                 </div>
-                <p className="text-sm text-slate-500">7-day trial • Cancel anytime</p>
-              </div>
 
-              <div className="flex-grow space-y-3 mb-8">
-                {plan.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-slate-700 leading-relaxed">{feature}</span>
+                {/* Pricing */}
+                <div className="mb-8 pb-8 border-b border-slate-100">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-5xl font-bold text-slate-900">
+                      {formatPrice(plan.priceUsd)}
+                    </span>
+                    <span className="text-slate-600 font-medium">
+                      /{billingCycle === "monthly" ? "mo" : "yr"}
+                    </span>
                   </div>
-                ))}
-              </div>
+                  {billingCycle === "yearly" && (
+                    <p className="text-sm text-green-600 font-medium">
+                      Save {formatPrice(plan.priceUsd * 2)} per year
+                    </p>
+                  )}
+                  <p className="text-sm text-slate-500 mt-2">
+                    7-day free trial • No credit card required
+                  </p>
+                </div>
 
-              <button
-                disabled={loading !== null || isCurrent}
-                onClick={() => subscribe(plan.id)}
-                className={`w-full py-4 px-6 rounded-xl font-semibold text-base transition-all ${
-                  isCurrent
-                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                    : plan.popular
-                    ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 shadow-lg hover:shadow-xl hover:-translate-y-1"
-                    : "bg-slate-900 text-white hover:bg-slate-800 shadow-md hover:shadow-lg hover:-translate-y-1"
-                } ${loading !== null ? "opacity-50 cursor-not-allowed" : ""} disabled:hover:transform-none`}
-              >
-                {isCurrent 
-                  ? "Current Plan" 
-                  : loading === plan.id 
-                  ? "Redirecting..." 
-                  : "Start 7-Day Trial"}
-              </button>
+                {/* Features */}
+                <div className="space-y-4 mb-8">
+                  {plan.features.map((feature, idx) => (
+                    <div key={idx} className="flex items-start gap-3">
+                      <div
+                        className={`flex-shrink-0 h-5 w-5 rounded-full flex items-center justify-center ${
+                          plan.popular ? "bg-blue-100" : "bg-green-100"
+                        }`}
+                      >
+                        <Check
+                          className={`h-3 w-3 ${
+                            plan.popular ? "text-blue-600" : "text-green-600"
+                          }`}
+                        />
+                      </div>
+                      <span className="text-slate-700 text-sm leading-relaxed">
+                        {feature}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA Button */}
+                <button
+                  disabled={loading !== null || isCurrent}
+                  onClick={() => subscribe(plan.id)}
+                  className={`w-full py-4 px-6 rounded-xl font-semibold text-base transition-all flex items-center justify-center gap-2 ${
+                    isCurrent
+                      ? "bg-slate-100 text-slate-500 cursor-not-allowed"
+                      : plan.popular
+                        ? "bg-gradient-to-r from-blue-600 to-blue-500 text-black hover:from-blue-700 hover:to-blue-600 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                        : "bg-slate-900 text-black hover:bg-slate-800 shadow-md hover:shadow-lg hover:-translate-y-1"
+                  } ${loading !== null ? "opacity-50 cursor-not-allowed" : ""} disabled:hover:transform-none`}
+                >
+                  {isCurrent ? (
+                    <>
+                      <Check className="h-5 w-5 text-black" />
+                      Current Plan
+                    </>
+                  ) : loading === plan.id ? (
+                    "Processing..."
+                  ) : (
+                    <>
+                      Start Free Trial
+                      <ArrowRight className="h-5 w-5 text-black" />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           );
         })}
       </div>
 
+      {/* Trust Footer */}
       <div className="text-center mt-16">
-        <p className="text-slate-600 text-lg">
-          No contracts • No hidden fees • 100% transparent
-        </p>
+        <div className="flex items-center justify-center gap-6 text-slate-400">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            <span className="text-xs">SSL Secured</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Check className="h-4 w-4" />
+            <span className="text-xs">No Hidden Fees</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Star className="h-4 w-4" />
+            <span className="text-xs">30-Day Guarantee</span>
+          </div>
+        </div>
       </div>
     </div>
   );

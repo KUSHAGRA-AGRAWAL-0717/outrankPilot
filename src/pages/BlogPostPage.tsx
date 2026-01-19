@@ -1,30 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ArrowLeft, Calendar, Clock } from 'lucide-react';
 
-interface Post {
+interface BlogPost {
   id: string;
   title: string;
   excerpt: string;
-  slug: string;
-  content: string | null;
+  content: string;
   created_at: string;
   updated_at: string;
+  image_url?: string;
 }
 
 const BlogPostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [post, setPost] = useState<Post | null>(null);
+  const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
-  
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     async function fetchPost() {
-      if (!slug) return;
-      
-      setLoading(true);
+      if (!slug) {
+        setError('No blog post specified');
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('posts')
@@ -33,228 +36,137 @@ const BlogPostPage: React.FC = () => {
           .single();
 
         if (error) throw error;
-        setPost(data);
-      } catch (error) {
-        console.error('Error fetching post:', error);
-        setPost(null);
+        
+        if (!data) {
+          setError('Blog post not found');
+        } else {
+          setPost(data);
+        }
+      } catch (err: any) {
+        console.error('Error fetching post:', err);
+        setError(err.message || 'Failed to load blog post');
       } finally {
         setLoading(false);
       }
     }
-    
+
     fetchPost();
   }, [slug]);
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const calculateReadTime = (content: string) => {
+    const wordsPerMinute = 200;
+    const wordCount = content.split(/\s+/).length;
+    const minutes = Math.ceil(wordCount / wordsPerMinute);
+    return `${minutes} min read`;
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#1B64F2]" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-xl text-slate-600 animate-pulse">Loading post...</div>
       </div>
     );
   }
 
-  if (!post) {
+  if (error || !post) {
     return (
-      <div className="min-h-screen bg-white px-6 md:px-12 py-24 max-w-4xl mx-auto">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-[#0B1F3B] mb-4">Post Not Found</h1>
-          <p className="text-xl text-[#5B6B8A] mb-8">
-            The blog post you're looking for doesn't exist.
-          </p>
-          <Button
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 px-6 py-24">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl font-bold text-slate-900 mb-4">Post Not Found</h1>
+          <p className="text-xl text-slate-600 mb-8">{error || 'This blog post does not exist.'}</p>
+          <button
             onClick={() => navigate('/blog')}
-            className="bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] font-semibold"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft size={20} />
             Back to Blog
-          </Button>
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-[#0B1F3B] px-6 md:px-12 py-12 max-w-4xl mx-auto">
-      {/* Back Button */}
-      <div className="mb-8">
-        <Button
-          onClick={() => navigate('/blog')}
-          className="bg-[#F6F8FC] hover:bg-[#E6EAF2] text-[#5B6B8A]"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Blog
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+      <div className="px-6 md:px-12 py-16 md:py-24">
+        <article className="max-w-4xl mx-auto">
+          {/* Back Button */}
+          <button
+            onClick={() => navigate('/blog')}
+            className="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-colors mb-8 group"
+          >
+            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+            <span className="text-base font-medium">Back to Blog</span>
+          </button>
 
-      {/* Article Header */}
-      <article className="space-y-8">
-        <header className="space-y-4">
-          <h1 className="text-5xl md:text-6xl font-bold text-[#0B1F3B] leading-tight">
-            {post.title}
-          </h1>
-          
-          <div className="flex items-center gap-4 text-sm text-[#8A94B3]">
-            <time dateTime={post.created_at}>
-              {new Date(post.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </time>
-            {post.updated_at !== post.created_at && (
-              <span>
-                • Updated {new Date(post.updated_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </span>
+          {/* Featured Image */}
+          {post.image_url && (
+            <div className="mb-10 rounded-2xl overflow-hidden shadow-xl">
+              <img 
+                src={post.image_url} 
+                alt={post.title}
+                className="w-full h-[400px] object-cover"
+              />
+            </div>
+          )}
+
+          {/* Post Header */}
+          <header className="mb-12">
+            {/* Meta Info */}
+            <div className="flex flex-wrap items-center gap-4 text-slate-500 mb-6">
+              <div className="flex items-center gap-2">
+                <Calendar size={16} />
+                <time dateTime={post.created_at} className="text-sm">
+                  {formatDate(post.created_at)}
+                </time>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock size={16} />
+                <span className="text-sm">{calculateReadTime(post.content || '')}</span>
+              </div>
+            </div>
+
+            {/* Title */}
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 mb-6 leading-tight">
+              {post.title}
+            </h1>
+
+            {/* Excerpt */}
+            {post.excerpt && (
+              <p className="text-xl md:text-2xl text-slate-600 leading-relaxed font-normal border-l-4 border-blue-600 pl-6 py-2">
+                {post.excerpt}
+              </p>
             )}
-          </div>
+          </header>
 
-          <p className="text-2xl text-[#5B6B8A] leading-relaxed">
-            {post.excerpt}
-          </p>
-        </header>
-
-        {/* Divider */}
-        <div className="border-t border-[#E6EAF2] my-12"></div>
-
-        {/* Article Content */}
-        <div 
-          className="prose prose-lg max-w-none"
-          dangerouslySetInnerHTML={{ __html: post.content || '' }}
-        />
-      </article>
-
-      {/* Back to Blog CTA */}
-      <div className="mt-16 pt-12 border-t border-[#E6EAF2]">
-        <Button
-          onClick={() => navigate('/blog')}
-          className="bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] font-semibold px-8 py-6 text-lg"
-        >
-          <ArrowLeft className="h-5 w-5 mr-2" />
-          Read More Articles
-        </Button>
+          {/* Post Content */}
+          <div 
+            className="prose prose-lg md:prose-xl max-w-none
+              prose-headings:text-slate-900 prose-headings:font-bold
+              prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-6 prose-h2:border-b prose-h2:border-slate-200 prose-h2:pb-3
+              prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-4 prose-h3:text-blue-900
+              prose-p:text-slate-700 prose-p:text-lg prose-p:leading-relaxed prose-p:mb-6
+              prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-a:font-medium
+              prose-strong:text-slate-900 prose-strong:font-semibold
+              prose-ul:text-slate-700 prose-ol:text-slate-700
+              prose-li:text-lg prose-li:leading-relaxed prose-li:mb-2 prose-li:marker:text-blue-600
+              prose-code:text-blue-600 prose-code:bg-blue-50 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:font-mono prose-code:text-sm
+              prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-pre:rounded-xl prose-pre:shadow-lg
+              prose-blockquote:border-l-4 prose-blockquote:border-blue-600 prose-blockquote:text-slate-600 prose-blockquote:bg-blue-50 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-lg
+              prose-img:rounded-xl prose-img:shadow-lg"
+            dangerouslySetInnerHTML={{ __html: post.content || '' }}
+          />
+        </article>
       </div>
-
-      {/* Styling for the content */}
-      <style>{`
-        .prose {
-          color: #0B1F3B;
-          line-height: 1.8;
-        }
-        
-        .prose h2 {
-          color: #0B1F3B;
-          font-size: 2rem;
-          font-weight: 700;
-          margin-top: 3rem;
-          margin-bottom: 1.5rem;
-          line-height: 1.3;
-        }
-        
-        .prose h3 {
-          color: #0B1F3B;
-          font-size: 1.625rem;
-          font-weight: 600;
-          margin-top: 2.5rem;
-          margin-bottom: 1.25rem;
-          line-height: 1.4;
-        }
-        
-        .prose h4 {
-          color: #0B1F3B;
-          font-size: 1.375rem;
-          font-weight: 600;
-          margin-top: 2rem;
-          margin-bottom: 1rem;
-        }
-        
-        .prose p {
-          color: #5B6B8A;
-          margin-bottom: 1.5rem;
-          line-height: 1.8;
-          font-size: 1.125rem;
-        }
-        
-        .prose ul, .prose ol {
-          margin: 1.5rem 0;
-          padding-left: 2rem;
-        }
-        
-        .prose li {
-          color: #5B6B8A;
-          margin-bottom: 0.75rem;
-          line-height: 1.7;
-        }
-        
-        .prose strong {
-          color: #0B1F3B;
-          font-weight: 600;
-        }
-        
-        .prose a {
-          color: #1B64F2;
-          text-decoration: underline;
-          transition: color 0.2s;
-        }
-        
-        .prose a:hover {
-          color: #1246C9;
-        }
-        
-        .prose figure {
-          margin: 3rem 0;
-          text-align: center;
-        }
-        
-        .prose img {
-          max-width: 100%;
-          height: auto;
-          border-radius: 12px;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-        }
-        
-        .prose figcaption {
-          margin-top: 1rem;
-          font-size: 0.9375rem;
-          color: #8A94B3;
-          font-style: italic;
-        }
-        
-        .prose code {
-          background: #F6F8FC;
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
-          font-size: 0.875em;
-          color: #1B64F2;
-          font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
-        }
-        
-        .prose pre {
-          background: #1E1E1E;
-          color: #D4D4D4;
-          padding: 1.5rem;
-          border-radius: 8px;
-          overflow-x: auto;
-          margin: 2rem 0;
-        }
-        
-        .prose pre code {
-          background: transparent;
-          padding: 0;
-          color: #D4D4D4;
-        }
-        
-        .prose blockquote {
-          border-left: 4px solid #FFD84D;
-          padding-left: 1.5rem;
-          margin: 2rem 0;
-          font-style: italic;
-          color: #5B6B8A;
-        }
-      `}</style>
     </div>
   );
 };

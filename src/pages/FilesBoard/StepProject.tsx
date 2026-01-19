@@ -16,7 +16,6 @@ export default function StepProject({ onNext, existingProjectId }: StepProjectPr
   const [projectData, setProjectData] = useState<any>(null);
 
   useEffect(() => {
-    // Check if project already exists
     if (existingProjectId) {
       loadExistingProject();
     }
@@ -46,7 +45,6 @@ export default function StepProject({ onNext, existingProjectId }: StepProjectPr
     setProjectLoading(false);
     toast.success("✅ Project created successfully!");
     
-    // Wait a moment before moving to next step
     setTimeout(() => {
       onNext(projectId);
     }, 1500);
@@ -58,7 +56,6 @@ export default function StepProject({ onNext, existingProjectId }: StepProjectPr
     }
   };
 
-  // If project already exists, show continue option
   if (projectCreated && existingProjectId) {
     return (
       <div className="max-w-2xl mx-auto space-y-8">
@@ -66,7 +63,7 @@ export default function StepProject({ onNext, existingProjectId }: StepProjectPr
           <div className="mx-auto w-24 h-24 bg-gradient-to-br from-[#10B981] to-[#3EF0C1] rounded-2xl flex items-center justify-center mb-6 shadow-2xl">
             <CheckCircle className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#0B1F3B] via-[#1B64F2] to-[#3EF0C1] bg-clip-text text-transparent mb-6 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-bold text-[#0B1F3B] mb-4 leading-tight">
             Project Already Created
           </h1>
           <p className="text-xl text-[#5B6B8A] max-w-md mx-auto leading-relaxed">
@@ -74,23 +71,23 @@ export default function StepProject({ onNext, existingProjectId }: StepProjectPr
           </p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl border border-[#E5E7EB]/50 p-8 shadow-2xl">
+        <div className="bg-white rounded-3xl border-2 border-[#E5E7EB] p-8 shadow-xl">
           <div className="space-y-4 mb-6">
-            <div className="flex justify-between text-sm">
-              <span className="text-[#5B6B8A]">Project Name:</span>
-              <span className="font-medium text-[#0B1F3B]">{projectData?.name}</span>
+            <div className="flex justify-between items-center text-sm p-3 bg-[#F6F8FC] rounded-lg">
+              <span className="font-medium text-[#5B6B8A]">Project Name:</span>
+              <span className="font-semibold text-[#0B1F3B]">{projectData?.name}</span>
             </div>
             {projectData?.business_url && (
-              <div className="flex justify-between text-sm">
-                <span className="text-[#5B6B8A]">Website:</span>
-                <span className="font-medium text-[#0B1F3B]">{projectData.business_url}</span>
+              <div className="flex justify-between items-center text-sm p-3 bg-[#F6F8FC] rounded-lg">
+                <span className="font-medium text-[#5B6B8A]">Website:</span>
+                <span className="font-semibold text-[#0B1F3B]">{projectData.business_url}</span>
               </div>
             )}
           </div>
 
           <Button
             onClick={handleContinue}
-            className="w-full bg-[#1B64F2] hover:bg-[#1246C9] text-white font-semibold py-6 text-lg shadow-lg hover:shadow-xl transition-all rounded-xl"
+            className="w-full bg-gradient-to-r from-[#1B64F2] to-[#1246C9] hover:from-[#1246C9] hover:to-[#0F3BA0] text-white font-semibold py-6 text-lg shadow-lg hover:shadow-xl transition-all rounded-xl"
           >
             Continue to Next Step →
           </Button>
@@ -105,18 +102,18 @@ export default function StepProject({ onNext, existingProjectId }: StepProjectPr
         <div className="mx-auto w-24 h-24 bg-gradient-to-br from-[#1B64F2] to-[#3EF0C1] rounded-2xl flex items-center justify-center mb-6 shadow-2xl">
           <Globe className="w-12 h-12 text-white" />
         </div>
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#0B1F3B] via-[#1B64F2] to-[#3EF0C1] bg-clip-text text-transparent mb-6 leading-tight">
+        <h1 className="text-4xl md:text-5xl font-bold text-[#0B1F3B] mb-4 leading-tight">
           Create Your First Project
         </h1>
-        <p className="text-xl text-[#5B6B8A] max-w-md mx-auto leading-relaxed">
+        <p className="text-xl text-[#5B6B8A] max-w-md mx-auto leading-relaxed mb-2">
           Enter your website domain to get started with AI-powered SEO optimization
         </p>
-        <p className="text-sm text-[#8A94B3] mt-2">
+        <p className="text-sm text-[#8A94B3]">
           We'll analyze your site and auto-fill project details for you
         </p>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-sm rounded-3xl border border-[#E5E7EB]/50 p-8 shadow-2xl">
+      <div className="bg-white rounded-3xl border-2 border-[#E5E7EB] p-8 shadow-xl">
         <NewProject 
           onProjectCreated={handleProjectCreated}
           onboardingMode={true}
@@ -127,7 +124,7 @@ export default function StepProject({ onNext, existingProjectId }: StepProjectPr
 
       {projectCreated && !existingProjectId && (
         <div className="text-center pt-4">
-          <div className="inline-flex items-center gap-2 bg-[#3EF0C1]/20 text-[#10B981] px-6 py-3 rounded-2xl font-medium">
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-[#10B981]/20 to-[#3EF0C1]/20 border-2 border-[#10B981]/30 text-[#10B981] px-6 py-3 rounded-2xl font-semibold shadow-lg">
             <div className="w-2 h-2 bg-[#10B981] rounded-full animate-pulse" />
             Project created! Moving to next step...
           </div>

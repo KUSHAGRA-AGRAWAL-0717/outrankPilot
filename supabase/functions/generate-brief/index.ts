@@ -9,59 +9,22 @@ const corsHeaders = {
   "Content-Type": "application/json",
 };
 
-async function generateImageWithHuggingFace(prompt: string): Promise<string> {
-  const HF_API_KEY = Deno.env.get("HUGGING_FACE_API_KEY");
-
-  if (!HF_API_KEY) {
-    console.warn("Hugging Face API key not set, using placeholder");
-    return `https://placehold.co/1200x675/1B64F2/white?text=${encodeURIComponent(
-      prompt.substring(0, 30)
-    )}`;
-  }
-
+async function generateImageWithPicsum(prompt: string, index: number): Promise<string> {
   try {
-    // Use Stable Diffusion XL instead - more reliable
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: prompt,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`HF API error: ${response.status} - ${errorText}`);
-      throw new Error(`HF API error: ${response.status}`);
+    let hash = 0;
+    for (let i = 0; i < prompt.length; i++) {
+      hash = ((hash << 5) - hash) + prompt.charCodeAt(i);
+      hash = hash & hash;
     }
-
-    // Check if response is actually an image
-    const contentType = response.headers.get("content-type");
-    console.log("HF Response content-type:", contentType);
-
-    if (!contentType?.includes("image")) {
-      const text = await response.text();
-      console.error("HF returned non-image response:", text.substring(0, 200));
-      throw new Error("HF did not return an image");
-    }
-
-    const imageBlob = await response.blob();
-    const arrayBuffer = await imageBlob.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-
-    return `data:image/jpeg;base64,${base64}`;
+    
+    const imageId = Math.abs(hash % 1000) + 1 + (index * 17);
+    const imageUrl = `https://picsum.photos/id/${imageId}/1200/675`;
+    
+    console.log(`Generated Picsum URL: ${imageUrl}`);
+    return imageUrl;
   } catch (error) {
-    console.error("Hugging Face generation error:", error);
-    // Fallback to placeholder
-    return `https://placehold.co/1200x675/1B64F2/white?text=${encodeURIComponent(
-      prompt.substring(0, 30)
-    )}`;
+    console.error("Picsum image generation error:", error);
+    return `https://picsum.photos/1200/675?random=${index}`;
   }
 }
 
@@ -70,7 +33,6 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  // ✅ FIX: Parse payload once and store it
   let payload: any;
   let keywordId: string | null = null;
 
@@ -96,22 +58,68 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Check subscription status
-    const { data: sub } = await supabase
+    // ✅ FIX: Check subscription and allow both 'active' and 'trialing' statuses
+    console.log(`Checking subscription for user: ${userId}`);
+    
+    const { data: sub, error: subError } = await supabase
       .from("subscriptions")
-      .select("status, ai_images")
+      .select("status, ai_images, trial_ends_at")
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (!sub || sub.status !== "active") {
-      return new Response(JSON.stringify({ error: "Subscription inactive" }), {
-        status: 403,
-        headers: corsHeaders,
-      });
+    console.log("Subscription data:", JSON.stringify(sub));
+
+    if (subError) {
+      console.error("Subscription query error:", subError);
+      return new Response(
+        JSON.stringify({ error: "Failed to check subscription", details: subError.message }), 
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    if (!sub) {
+      console.warn("No subscription found for user");
+      return new Response(
+        JSON.stringify({ 
+          error: "No subscription found", 
+          message: "Please subscribe to a plan to generate content briefs"
+        }), 
+        { status: 403, headers: corsHeaders }
+      );
+    }
+
+    // ✅ FIX: Allow both 'active' and 'trialing' statuses
+    const validStatuses = ['active', 'trialing'];
+    if (!validStatuses.includes(sub.status)) {
+      console.error(`Subscription status is '${sub.status}', expected 'active' or 'trialing'`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Subscription inactive", 
+          status: sub.status,
+          message: "Please activate your subscription to generate content briefs"
+        }), 
+        { status: 403, headers: corsHeaders }
+      );
+    }
+
+    // Check if trial has ended
+    if (sub.status === 'trialing' && sub.trial_ends_at) {
+      const trialEnd = new Date(sub.trial_ends_at);
+      const now = new Date();
+      if (now > trialEnd) {
+        console.error(`Trial ended at ${sub.trial_ends_at}`);
+        return new Response(
+          JSON.stringify({ 
+            error: "Trial expired", 
+            message: "Your trial has ended. Please upgrade to a paid plan to continue."
+          }), 
+          { status: 403, headers: corsHeaders }
+        );
+      }
     }
 
     const includeImages = sub.ai_images || false;
-    console.log("AI Images enabled:", includeImages);
+    console.log(`Subscription status: ${sub.status}, AI Images enabled: ${includeImages}`);
 
     // Generate content brief with AI
     const systemPrompt = includeImages
@@ -163,7 +171,6 @@ Respond ONLY with valid JSON in this exact format:
   }
 }`;
 
-    // ✅ FIX: Add retry logic for OpenAI API
     console.log("Calling OpenAI API...");
     let openaiResp;
     let retries = 3;
@@ -191,22 +198,20 @@ Respond ONLY with valid JSON in this exact format:
         });
 
         if (openaiResp.ok) {
-          break; // Success, exit retry loop
+          break;
         }
 
-        // If 502/503, retry
         if (openaiResp.status === 502 || openaiResp.status === 503) {
           retries--;
           if (retries > 0) {
             console.log(
               `OpenAI error ${openaiResp.status}, retrying... (${retries} left)`
             );
-            await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2s before retry
+            await new Promise((resolve) => setTimeout(resolve, 2000));
             continue;
           }
         }
 
-        // Other errors, throw immediately
         const errorText = await openaiResp.text();
         throw new Error(`OpenAI error: ${openaiResp.status} - ${errorText}`);
       } catch (fetchError) {
@@ -294,12 +299,10 @@ Respond ONLY with valid JSON in this exact format:
         try {
           const prompt = imagePrompts[i];
           console.log(
-            `Generating image ${i + 1}/${
-              imagePrompts.length
-            }: ${prompt.substring(0, 50)}...`
+            `Generating image ${i + 1}/${imagePrompts.length}: ${prompt.substring(0, 50)}...`
           );
 
-          const imageUrl = await generateImageWithHuggingFace(prompt);
+          const imageUrl = await generateImageWithPicsum(prompt, i);
           imageUrls.push(imageUrl);
 
           // Store in content_assets
@@ -376,7 +379,6 @@ Respond ONLY with valid JSON in this exact format:
   } catch (err: any) {
     console.error("generate-brief error:", err);
 
-    // ✅ FIX: Revert keyword status without re-parsing body
     if (keywordId) {
       try {
         const supabase = createClient(

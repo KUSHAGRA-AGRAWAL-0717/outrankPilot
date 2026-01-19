@@ -20,6 +20,12 @@ import {
   Search
 } from "lucide-react";
 
+interface CompetitorsProps {
+  projectId?: string;
+  onSubmit?: () => void;
+  onboardingMode?: boolean;
+}
+
 const YourSiteTraffic = ({ projectId }: { projectId: string }) => {
   const [stats, setStats] = useState({ sessions: 0, users: 0 });
   const [loading, setLoading] = useState(true);
@@ -65,7 +71,6 @@ const YourSiteTraffic = ({ projectId }: { projectId: string }) => {
   );
 };
 
-// Keyword Preview Card Component
 const KeywordPreviewCard = ({ keywords }: { keywords: string[] }) => {
   if (!keywords || keywords.length === 0) return null;
 
@@ -100,13 +105,20 @@ const KeywordPreviewCard = ({ keywords }: { keywords: string[] }) => {
   );
 };
 
-export default function Competitors() {
+export default function Competitors({ 
+  projectId: propProjectId,
+  onSubmit,
+  onboardingMode = false 
+}: CompetitorsProps = {}) {
   const { currentProject, user } = useApp();
   const [domain, setDomain] = useState("");
   const [analyzingDomains, setAnalyzingDomains] = useState<Set<string>>(new Set());
   const [hoveredCompetitorId, setHoveredCompetitorId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+
+  // Use prop projectId if provided, otherwise use currentProject
+  const activeProjectId = propProjectId || currentProject?.id;
 
   const toggleCardExpansion = (competitorId: string) => {
     setExpandedCards(prev => {
@@ -121,7 +133,7 @@ export default function Competitors() {
   };
 
   useEffect(() => {
-    if (!currentProject) return;
+    if (!activeProjectId) return;
 
     const channel = supabase
       .channel("competitors")
@@ -131,37 +143,43 @@ export default function Competitors() {
           event: "*",
           schema: "public",
           table: "competitors",
-          filter: `project_id=eq.${currentProject.id}`,
+          filter: `project_id=eq.${activeProjectId}`,
         },
-        () => queryClient.invalidateQueries({ queryKey: ["competitors", currentProject.id] })
+        () => queryClient.invalidateQueries({ queryKey: ["competitors", activeProjectId] })
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentProject, queryClient]);
+  }, [activeProjectId, queryClient]);
 
   const { data: competitors, isLoading } = useQuery({
-    queryKey: ["competitors", currentProject?.id],
+    queryKey: ["competitors", activeProjectId],
     queryFn: async () => {
-      if (!currentProject) return [];
+      if (!activeProjectId) return [];
 
       const { data, error } = await supabase
         .from("competitors")
         .select("*")
-        .eq("project_id", currentProject.id)
+        .eq("project_id", activeProjectId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      
+      // ✅ CRITICAL: Trigger onSubmit if competitors exist (for onboarding)
+      if (data && data.length > 0 && onSubmit && onboardingMode) {
+        onSubmit();
+      }
+      
       return data || [];
     },
-    enabled: !!currentProject,
+    enabled: !!activeProjectId,
   });
 
   const analyzeMutation = useMutation({
     mutationFn: async (domain: string) => {
-      if (!currentProject || !user) throw new Error("No project or user found");
+      if (!activeProjectId || !user) throw new Error("No project or user found");
 
       setAnalyzingDomains(prev => new Set(prev).add(domain));
 
@@ -169,7 +187,7 @@ export default function Competitors() {
         const { data, error } = await supabase.functions.invoke("analyze-competitor", {
           body: {
             domain,
-            project_id: currentProject.id,
+            project_id: activeProjectId,
             user_id: user.id,
           },
         });
@@ -185,9 +203,14 @@ export default function Competitors() {
       }
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["competitors", currentProject?.id] });
+      queryClient.invalidateQueries({ queryKey: ["competitors", activeProjectId] });
       toast.success(`Analysis complete! Found ${data?.gaps?.length || 0} keyword gaps`);
       setDomain("");
+      
+      // ✅ CRITICAL: Call onSubmit after successful competitor addition
+      if (onSubmit && onboardingMode) {
+        onSubmit();
+      }
     },
     onError: (error: any) => {
       console.error("Error analyzing competitor:", error);
@@ -197,10 +220,10 @@ export default function Competitors() {
 
   const bulkAddMutation = useMutation({
     mutationFn: async ({ gaps, competitorId }: { gaps: string[]; competitorId: string }) => {
-      if (!currentProject || !user) throw new Error("Missing project or user");
+      if (!activeProjectId || !user) throw new Error("Missing project or user");
 
       const keywords = gaps.map((gap) => ({
-        project_id: currentProject.id,
+        project_id: activeProjectId,
         user_id: user.id,
         keyword: gap,
         status: "queued",
@@ -218,7 +241,7 @@ export default function Competitors() {
     },
     onSuccess: (count) => {
       toast.success(`${count} keyword gaps added to your project!`);
-      queryClient.invalidateQueries({ queryKey: ["competitors", currentProject?.id] });
+      queryClient.invalidateQueries({ queryKey: ["competitors", activeProjectId] });
     },
     onError: (error) => {
       console.error("Error adding gaps:", error);
@@ -237,7 +260,7 @@ export default function Competitors() {
     },
     onSuccess: () => {
       toast.success("Competitor deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["competitors", currentProject?.id] });
+      queryClient.invalidateQueries({ queryKey: ["competitors", activeProjectId] });
     },
     onError: (error) => {
       console.error("Error deleting competitor:", error);
@@ -250,12 +273,10 @@ export default function Competitors() {
       toast.error("Please enter a domain");
       return;
     }
-    if (!currentProject) {
+    if (!activeProjectId) {
       toast.error("Please select a project first");
       return;
     }
-
-     
 
     const cleanDomain = domain.trim()
       .replace(/^https?:\/\//, '')
@@ -265,11 +286,11 @@ export default function Competitors() {
   };
 
   const { data: trafficData } = useQuery({
-    queryKey: ["traffic", currentProject?.id],
+    queryKey: ["traffic", activeProjectId],
     queryFn: async () => {
       try {
         const { data, error } = await supabase.functions.invoke("ga-report", {
-          body: { projectId: currentProject?.id, days: 30 }
+          body: { projectId: activeProjectId, days: 30 }
         });
 
         if (error) throw error;
@@ -288,6 +309,79 @@ export default function Competitors() {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-[#1B64F2]" />
+      </div>
+    );
+  }
+
+  // ✅ Simplified view for onboarding mode
+  if (onboardingMode) {
+    return (
+      <div className="space-y-4">
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5B6B8A]" />
+            <Input
+              placeholder="competitor.com"
+              value={domain}
+              onChange={(e) => setDomain(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddCompetitor()}
+              disabled={analyzeMutation.isPending}
+              className="pl-10 h-12 bg-white border-2 border-[#E5E7EB] focus:border-[#1B64F2] focus:ring-2 focus:ring-[#1B64F2]/20 text-[#0B1F3B] placeholder:text-[#8A94B3]"
+            />
+          </div>
+          <Button
+            className="bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] font-semibold h-12 px-6"
+            onClick={handleAddCompetitor}
+            disabled={analyzeMutation.isPending || !activeProjectId}
+          >
+            {analyzeMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Plus className="h-4 w-4 mr-2" />
+                Add
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Show added competitors */}
+        {competitors && competitors.length > 0 && (
+          <div className="space-y-2">
+            {competitors.map((competitor: any) => (
+              <div
+                key={competitor.id}
+                className="flex items-center justify-between p-3 bg-[#F6F8FC] rounded-lg border-2 border-[#E5E7EB]"
+              >
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-[#1B64F2]" />
+                  <span className="text-[#0B1F3B] font-medium">{competitor.domain}</span>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                    {competitor.gaps?.length || 0} gaps
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => {
+                    if (window.confirm(`Remove ${competitor.domain}?`)) {
+                      deleteCompetitorMutation.mutate(competitor.id);
+                    }
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {(!competitors || competitors.length === 0) && (
+          <p className="text-sm text-[#8A94B3] text-center py-4 bg-[#F6F8FC] rounded-lg border-2 border-dashed border-[#E5E7EB]">
+            Add at least one competitor to continue
+          </p>
+        )}
       </div>
     );
   }

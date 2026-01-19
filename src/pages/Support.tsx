@@ -56,7 +56,7 @@ const supportChannels = [
   {
     icon: Mail,
     title: 'Email Support',
-    description: 'Send us an email and we\'ll respond within 24 hours',
+    description: 'Send us an email and we\'ll respond within 24 hours : outrankpilot@gmail.com',
     availability: '24-hour response time',
     action: 'Send Email',
     color: 'from-purple-600 to-indigo-600'
@@ -69,14 +69,14 @@ const supportChannels = [
     action: 'View Docs',
     color: 'from-green-600 to-emerald-600'
   },
-  {
-    icon: Video,
-    title: 'Video Tutorials',
-    description: 'Watch step-by-step video guides',
-    availability: '50+ tutorials available',
-    action: 'Watch Now',
-    color: 'from-orange-600 to-red-600'
-  }
+  // {
+  //   icon: Video,
+  //   title: 'Video Tutorials',
+  //   description: 'Watch step-by-step video guides',
+  //   availability: '50+ tutorials available',
+  //   action: 'Watch Now',
+  //   color: 'from-orange-600 to-red-600'
+  // }
 ];
 
 export default function Support() {
@@ -111,26 +111,7 @@ export default function Support() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-gradient-to-r from-indigo-700 via-purple-700 to-blue-700 shadow-lg">
-        <div className="container mx-auto flex h-20 items-center justify-between px-6">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-400 shadow-lg">
-              <img src={logo} alt="OutrankPilot Logo" className="h-7 w-7 rounded-full" />
-            </div>
-            <span className="text-2xl font-bold text-white">OutrankPilot</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/auth')} className="text-white hover:text-yellow-300 transition-colors font-medium">
-              Sign In
-            </button>
-            <button onClick={() => navigate('/auth')} className="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-7 py-3.5 rounded-full transition-all shadow-lg hover:shadow-xl hover:scale-105 flex items-center gap-2">
-              Get Started Free
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </header>
+     
 
       {/* Hero Section */}
       <section className="relative pt-24 pb-16 overflow-hidden">
@@ -165,7 +146,7 @@ export default function Support() {
               Choose Your Support Channel
             </h2>
 
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
               {supportChannels.map((channel) => (
                 <div 
                   key={channel.title}
@@ -180,9 +161,9 @@ export default function Support() {
                     <Clock className="h-4 w-4" />
                     <span>{channel.availability}</span>
                   </div>
-                  <button className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold px-4 py-2.5 rounded-lg transition-all">
+                  {/* <button className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold px-4 py-2.5 rounded-lg transition-all">
                     {channel.action}
-                  </button>
+                  </button> */}
                 </div>
               ))}
             </div>
@@ -191,7 +172,7 @@ export default function Support() {
       </section>
 
       {/* Contact Form */}
-      <section className="py-16 bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* <section className="py-16 bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-12">
@@ -274,7 +255,7 @@ export default function Support() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* FAQ Section */}
       <section className="py-16 bg-white">

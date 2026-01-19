@@ -105,26 +105,7 @@ export default function Affiliate() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-gradient-to-r from-indigo-700 via-purple-700 to-blue-700 shadow-lg">
-        <div className="container mx-auto flex h-20 items-center justify-between px-6">
-          <div className="flex items-center gap-3 cursor-pointer">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-400 shadow-lg">
-              <Zap className="h-7 w-7 text-gray-900" />
-            </div>
-            <span className="text-2xl font-bold text-white">Outrankpilot</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button className="text-white hover:text-yellow-300 transition-colors font-medium">
-              Sign In
-            </button>
-            <button className="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-7 py-3.5 rounded-full transition-all shadow-lg hover:shadow-xl hover:scale-105 flex items-center gap-2">
-              Get Started Free
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </header>
+     
 
       {/* Hero Section */}
       <section className="relative pt-24 pb-16 overflow-hidden">
@@ -256,7 +237,8 @@ export default function Affiliate() {
       {/* Application Form */}
       <section id="application-form" className="py-16 bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto">
+         <p className='text-black'> Coming Soon: Affiliate Application Form</p>
+          {/* <div className="max-w-3xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold text-gray-900 mb-4">
                 Ready to Earn With Outrankpilot?
@@ -317,7 +299,7 @@ export default function Affiliate() {
                 </button>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </section>
 

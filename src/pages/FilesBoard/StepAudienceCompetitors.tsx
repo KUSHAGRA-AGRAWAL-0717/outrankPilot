@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import Keywords from "../Keywords";
 import Competitors from "../Competitors";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface StepAudienceCompetitorsProps {
   projectId: string | null;
@@ -23,14 +22,12 @@ export default function StepAudienceCompetitors({
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // Validate projectId
     if (!projectId) {
       toast.error("Project ID missing. Please complete step 1 first.");
       setChecking(false);
       return;
     }
 
-    // Check if keywords and competitors already exist
     checkExistingData();
   }, [projectId]);
 
@@ -38,7 +35,6 @@ export default function StepAudienceCompetitors({
     if (!projectId) return;
 
     try {
-      // Check for existing keywords
       const { data: keywordsData, error: keywordsError } = await supabase
         .from("keywords")
         .select("id")
@@ -49,7 +45,6 @@ export default function StepAudienceCompetitors({
         setKeywordsSubmitted(true);
       }
 
-      // Check for existing competitors
       const { data: competitorsData, error: competitorsError } = await supabase
         .from("competitors")
         .select("id")
@@ -94,18 +89,21 @@ export default function StepAudienceCompetitors({
 
   const isReadyForNext = keywordsSubmitted && competitorsSubmitted && projectId;
 
-  // Show error if no projectId
   if (!projectId) {
     return (
       <div className="max-w-2xl mx-auto text-center space-y-6">
-        <div className="mx-auto w-20 h-20 bg-red-100 rounded-2xl flex items-center justify-center">
+        <div className="mx-auto w-20 h-20 bg-red-50 border-2 border-red-200 rounded-2xl flex items-center justify-center">
           <AlertCircle className="w-10 h-10 text-red-600" />
         </div>
         <h2 className="text-2xl font-bold text-[#0B1F3B]">Missing Project Information</h2>
         <p className="text-[#5B6B8A]">
           Please go back and complete the project creation step first.
         </p>
-        <Button onClick={onPrev} variant="outline">
+        <Button 
+          onClick={onPrev} 
+          variant="outline"
+          className="border-2 border-[#E5E7EB] hover:border-[#1B64F2] hover:bg-[#1B64F2]/5 text-[#0B1F3B] font-semibold"
+        >
           ← Go Back
         </Button>
       </div>
@@ -130,48 +128,54 @@ export default function StepAudienceCompetitors({
 
       <div className="space-y-6">
         {/* Keywords Section */}
-        <Card className="border-[#E5E7EB] shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-4 border-b border-[#E5E7EB] flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-3 text-[#0B1F3B] text-lg">
+        <div className="bg-white rounded-2xl border-2 border-[#E5E7EB] shadow-md hover:shadow-lg transition-shadow overflow-hidden">
+          <div className="bg-gradient-to-r from-[#F6F8FC] to-white px-6 py-4 border-b-2 border-[#E5E7EB] flex flex-row items-center justify-between">
+            <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-[#1B64F2]/10 flex items-center justify-center">
                 <Target className="w-5 h-5 text-[#1B64F2]" />
               </div>
-              Target Keywords
-            </CardTitle>
+              <h3 className="text-lg font-semibold text-[#0B1F3B]">Target Keywords</h3>
+            </div>
             {keywordsSubmitted && (
-              <Check className="w-5 h-5 text-[#10B981]" />
+              <div className="flex items-center gap-2 bg-[#10B981]/10 px-3 py-1.5 rounded-full">
+                <Check className="w-4 h-4 text-[#10B981]" />
+                <span className="text-xs font-semibold text-[#10B981]">Complete</span>
+              </div>
             )}
-          </CardHeader>
-          <CardContent className="pt-6">
+          </div>
+          <div className="p-6 bg-white">
             <Keywords 
               projectId={projectId}
               onSubmit={handleKeywordsSubmit}
               onboardingMode={true}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Competitors Section */}
-        <Card className="border-[#E5E7EB] shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-4 border-b border-[#E5E7EB] flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-3 text-[#0B1F3B] text-lg">
+        <div className="bg-white rounded-2xl border-2 border-[#E5E7EB] shadow-md hover:shadow-lg transition-shadow overflow-hidden">
+          <div className="bg-gradient-to-r from-[#F6F8FC] to-white px-6 py-4 border-b-2 border-[#E5E7EB] flex flex-row items-center justify-between">
+            <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-[#1B64F2]/10 flex items-center justify-center">
                 <Users className="w-5 h-5 text-[#1B64F2]" />
               </div>
-              Competitors
-            </CardTitle>
+              <h3 className="text-lg font-semibold text-[#0B1F3B]">Competitors</h3>
+            </div>
             {competitorsSubmitted && (
-              <Check className="w-5 h-5 text-[#10B981]" />
+              <div className="flex items-center gap-2 bg-[#10B981]/10 px-3 py-1.5 rounded-full">
+                <Check className="w-4 h-4 text-[#10B981]" />
+                <span className="text-xs font-semibold text-[#10B981]">Complete</span>
+              </div>
             )}
-          </CardHeader>
-          <CardContent className="pt-6">
+          </div>
+          <div className="p-6 bg-white">
             <Competitors 
               projectId={projectId}
               onSubmit={handleCompetitorsSubmit}
               onboardingMode={true}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       <div className="flex justify-center pt-6">
@@ -179,7 +183,7 @@ export default function StepAudienceCompetitors({
           onClick={handleNext}
           disabled={!isReadyForNext || checking}
           size="lg"
-          className="bg-[#1B64F2] hover:bg-[#1246C9] text-white font-semibold px-10 py-6 text-base shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
+          className="bg-gradient-to-r from-[#1B64F2] to-[#1246C9] hover:from-[#1246C9] hover:to-[#0F3BA0] text-white font-semibold px-10 py-6 text-base shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
         >
           {checking ? (
             "Checking..."
