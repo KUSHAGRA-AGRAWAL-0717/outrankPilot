@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import {
   LayoutDashboard,
   Search,
@@ -32,6 +33,12 @@ export function Sidebar() {
   const location = useLocation();
   const { currentProject, projects, setCurrentProject } = useApp();
   const [projectsOpen, setProjectsOpen] = useState(false);
+  const { access, loading, getLimitInfo } = useFeatureAccess();
+
+  // Get limit info for display
+  const articleInfo = getLimitInfo('articles');
+  const projectInfo = getLimitInfo('projects');
+  const keywordInfo = getLimitInfo('keywords');
 
   return (
     <aside className="flex h-screen w-64 flex-col bg-white border-r border-[#8A94B3]/30">
@@ -148,19 +155,131 @@ export function Sidebar() {
 
       {/* Usage Stats */}
       <div className="p-4 border-t border-[#8A94B3]/30">
-        <div className="rounded-xl bg-[#F6F8FC] p-4 border border-[#8A94B3]/30">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-[#5B6B8A]">
-              Monthly Briefs
-            </span>
-            <span className="text-xs font-bold text-[#0B1F3B]">
-              0/50
-            </span>
+        {loading ? (
+          <div className="rounded-xl bg-[#F6F8FC] p-4 border border-[#8A94B3]/30">
+            <div className="animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="h-2 bg-gray-200 rounded"></div>
+            </div>
           </div>
-          <div className="h-2 rounded-full bg-[#8A94B3]/20 overflow-hidden">
-            <div className="h-full w-0 rounded-full bg-[#1B64F2] transition-all" />
+        ) : access ? (
+          <div className="space-y-3">
+            {/* Plan Badge */}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-[#5B6B8A]">
+                Current Plan
+              </span>
+              <span className={cn(
+                "px-2 py-1 rounded-full text-xs font-bold",
+                access.plan === "free" 
+                  ? "bg-gray-100 text-gray-700" 
+                  : "bg-gradient-to-r from-[#FFD84D] to-yellow-400 text-[#0B1F3B]"
+              )}>
+                {access.plan.charAt(0).toUpperCase() + access.plan.slice(1)}
+              </span>
+            </div>
+
+            {/* Articles Usage */}
+            <div className="rounded-xl bg-[#F6F8FC] p-4 border border-[#8A94B3]/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-[#5B6B8A]">
+                  Monthly Articles
+                </span>
+                <span className="text-xs font-bold text-[#0B1F3B]">
+                  {articleInfo.isUnlimited 
+                    ? `${articleInfo.current}/∞` 
+                    : `${articleInfo.current}/${articleInfo.max}`}
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-[#8A94B3]/20 overflow-hidden">
+                <div 
+                  className={cn(
+                    "h-full rounded-full transition-all",
+                    articleInfo.percentage >= 90 ? "bg-red-500" :
+                    articleInfo.percentage >= 70 ? "bg-yellow-500" :
+                    "bg-[#1B64F2]"
+                  )}
+                  style={{ 
+                    width: articleInfo.isUnlimited 
+                      ? '0%' 
+                      : `${Math.min(articleInfo.percentage, 100)}%` 
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Projects Usage */}
+            <div className="rounded-xl bg-[#F6F8FC] p-4 border border-[#8A94B3]/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-[#5B6B8A]">
+                  Projects
+                </span>
+                <span className="text-xs font-bold text-[#0B1F3B]">
+                  {projectInfo.isUnlimited 
+                    ? `${projectInfo.current}/∞` 
+                    : `${projectInfo.current}/${projectInfo.max}`}
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-[#8A94B3]/20 overflow-hidden">
+                <div 
+                  className={cn(
+                    "h-full rounded-full transition-all",
+                    projectInfo.percentage >= 90 ? "bg-red-500" :
+                    projectInfo.percentage >= 70 ? "bg-yellow-500" :
+                    "bg-[#1B64F2]"
+                  )}
+                  style={{ 
+                    width: projectInfo.isUnlimited 
+                      ? '0%' 
+                      : `${Math.min(projectInfo.percentage, 100)}%` 
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Keywords Usage */}
+            <div className="rounded-xl bg-[#F6F8FC] p-4 border border-[#8A94B3]/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-[#5B6B8A]">
+                  Keywords
+                </span>
+                <span className="text-xs font-bold text-[#0B1F3B]">
+                  {keywordInfo.isUnlimited 
+                    ? `${keywordInfo.current}/∞` 
+                    : `${keywordInfo.current}/${keywordInfo.max}`}
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-[#8A94B3]/20 overflow-hidden">
+                <div 
+                  className={cn(
+                    "h-full rounded-full transition-all",
+                    keywordInfo.percentage >= 90 ? "bg-red-500" :
+                    keywordInfo.percentage >= 70 ? "bg-yellow-500" :
+                    "bg-[#1B64F2]"
+                  )}
+                  style={{ 
+                    width: keywordInfo.isUnlimited 
+                      ? '0%' 
+                      : `${Math.min(keywordInfo.percentage, 100)}%` 
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Upgrade Link for Free Users */}
+            {access.plan === "free" && (
+              <Link 
+                to="/pricing"
+                className="block w-full text-center px-4 py-2 bg-gradient-to-r from-[#FFD84D] to-yellow-400 hover:from-yellow-400 hover:to-[#FFD84D] text-[#0B1F3B] rounded-xl font-semibold text-sm transition-all shadow-md hover:shadow-lg"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Upgrade Plan
+                </div>
+              </Link>
+            )}
           </div>
-        </div>
+        ) : null}
       </div>
     </aside>
   );

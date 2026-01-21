@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Plus, Loader2, CheckCircle2, FolderPlus, Target } from "lucide-react";
+import { Plus, Loader2, CheckCircle2, FolderPlus, Target, Lock, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useApp } from "@/contexts/AppContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 interface KeywordData {
   id: string;
@@ -31,6 +32,7 @@ export default function Keywords({
 }: KeywordsProps) {
   const { currentProject, user } = useApp();
   const navigate = useNavigate();
+  const { access, canCreate, hasReachedLimit, getLimitInfo } = useFeatureAccess();
 
   const effectiveProjectId = onboardingMode ? propProjectId : currentProject?.id;
 
@@ -40,6 +42,9 @@ export default function Keywords({
   const [submitting, setSubmitting] = useState(false);
   const [hasAddedKeyword, setHasAddedKeyword] = useState(false);
   const [generatingBriefs, setGeneratingBriefs] = useState<Set<string>>(new Set());
+
+  const keywordLimit = getLimitInfo('keywords');
+  const canAddKeyword = canCreate('keywords');
 
   const loadKeywords = async () => {
     if (!effectiveProjectId) {
@@ -78,7 +83,6 @@ export default function Keywords({
     
     loadKeywords();
 
-    // Realtime subscription with error handling and status monitoring
     const channel = supabase
       .channel(`keyword-updates-${effectiveProjectId}`, {
         config: {
@@ -94,7 +98,6 @@ export default function Keywords({
           filter: `project_id=eq.${effectiveProjectId}`,
         },
         (payload) => {
-          
           setKeywords((prev) =>
             prev.map((k) => (k.id === payload.new.id ? { ...k, ...payload.new } : k))
           );
@@ -109,8 +112,6 @@ export default function Keywords({
           filter: `project_id=eq.${effectiveProjectId}`,
         },
         (payload) => {
-         
-          // Only add if not already in list (optimistic update already added it)
           setKeywords((prev) => {
             const exists = prev.some((k) => k.id === payload.new.id);
             if (exists) {
@@ -121,19 +122,16 @@ export default function Keywords({
         }
       )
       .subscribe((status, err) => {
-        
         if (err) {
           console.error("Realtime subscription error:", err);
         }
         if (status === 'CHANNEL_ERROR') {
           console.error("Channel error - retrying subscription");
-          // Optionally reload data
           loadKeywords();
         }
       });
 
     return () => {
-      
       supabase.removeChannel(channel);
     };
   }, [effectiveProjectId]);
@@ -141,6 +139,17 @@ export default function Keywords({
   const handleAddKeyword = async () => {
     if (!newKeyword.trim()) {
       toast.error("Please enter a keyword");
+      return;
+    }
+
+    // Check keyword limit
+    if (!canAddKeyword) {
+      toast.error(`You've reached your keyword limit (${keywordLimit.current}/${keywordLimit.max}). Please upgrade your plan.`, {
+        action: {
+          label: "Upgrade",
+          onClick: () => navigate("/pricing"),
+        },
+      });
       return;
     }
 
@@ -182,7 +191,6 @@ export default function Keywords({
       setNewKeyword("");
       setHasAddedKeyword(true);
       
-      // Optimistically update state to "analyzing"
       const analyzingKeyword = { ...keywordData, status: "analyzing" as const };
       setKeywords((prev) => [analyzingKeyword, ...prev]);
       
@@ -192,7 +200,6 @@ export default function Keywords({
         onSubmit();
       }
 
-      // Invoke edge function
       const { error: functionError } = await supabase.functions.invoke(
         "analyze-keywords",
         {
@@ -211,7 +218,6 @@ export default function Keywords({
         );
         toast.error("Keyword analysis failed. Check your API keys.");
       } else {
-        // Poll for status update as backup if realtime fails
         setTimeout(() => {
           supabase
             .from("keywords")
@@ -235,7 +241,7 @@ export default function Keywords({
                 );
               }
             });
-        }, 3000); // Poll after 3 seconds
+        }, 3000);
       }
     } catch (err: any) {
       console.error(err);
@@ -258,7 +264,6 @@ export default function Keywords({
     setGeneratingBriefs((prev) => new Set(prev).add(k.id));
 
     try {
-      // Optimistically update local state
       setKeywords((prev) =>
         prev.map((keyword) =>
           keyword.id === k.id ? { ...keyword, status: "analyzing" } : keyword
@@ -288,7 +293,6 @@ export default function Keywords({
         );
         toast.error("Failed to generate brief");
       } else {
-        // Poll for status update as backup
         setTimeout(() => {
           supabase
             .from("keywords")
@@ -343,23 +347,56 @@ export default function Keywords({
 
     return (
       <div className="space-y-6">
+        {/* Limit Warning */}
+        {access && hasReachedLimit('keywords') && (
+          <div className="p-4 rounded-xl bg-yellow-50 border-2 border-yellow-300">
+            <div className="flex items-start gap-3">
+              <Lock className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-yellow-900 mb-1">
+                  Keyword Limit Reached
+                </p>
+                <p className="text-xs text-yellow-800 mb-2">
+                  You've used {keywordLimit.current} of {keywordLimit.max} keywords on your {access.plan} plan.
+                </p>
+                <Link 
+                  to="/pricing"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-yellow-700 hover:text-yellow-800"
+                >
+                  <Crown className="h-3 w-3" />
+                  Upgrade to add more keywords →
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Add Keyword Input */}
         <div className="flex gap-4">
           <Input
             placeholder="Enter keyword (e.g., 'best running shoes')"
             value={newKeyword}
             onChange={(e) => setNewKeyword(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleAddKeyword()}
-            disabled={submitting}
+            onKeyPress={(e) => e.key === "Enter" && !hasReachedLimit('keywords') && handleAddKeyword()}
+            disabled={submitting || hasReachedLimit('keywords')}
             className="h-12 bg-white border-[#8A94B3]/30 focus:ring-2 focus:ring-[#1B64F2] focus:border-[#1B64F2]"
           />
           <Button 
             onClick={handleAddKeyword} 
-            disabled={submitting}
-            className="bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] font-semibold h-12 px-6"
+            disabled={submitting || hasReachedLimit('keywords')}
+            className={`h-12 px-6 font-semibold ${
+              hasReachedLimit('keywords')
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B]'
+            }`}
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
+            ) : hasReachedLimit('keywords') ? (
+              <>
+                <Lock className="h-4 w-4 mr-2" />
+                Limit Reached
+              </>
             ) : (
               <>
                 <Plus className="h-4 w-4 mr-2" />
@@ -369,7 +406,14 @@ export default function Keywords({
           </Button>
         </div>
 
-        {/* Keywords List - Compact view for onboarding */}
+        {/* Usage Info */}
+        {access && !hasReachedLimit('keywords') && (
+          <div className="text-xs text-[#5B6B8A] text-center">
+            {keywordLimit.current}/{keywordLimit.isUnlimited ? '∞' : keywordLimit.max} keywords used
+          </div>
+        )}
+
+        {/* Keywords List */}
         {keywords.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-[#5B6B8A]">
@@ -452,6 +496,30 @@ export default function Keywords({
         )}
       </div>
 
+      {/* Limit Warning Banner */}
+      {access && hasReachedLimit('keywords') && currentProject && (
+        <div className="p-4 rounded-xl bg-yellow-50 border-2 border-yellow-300">
+          <div className="flex items-start gap-4">
+            <Lock className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-1" />
+            <div className="flex-1">
+              <p className="font-semibold text-yellow-900 mb-1">
+                Keyword Limit Reached
+              </p>
+              <p className="text-sm text-yellow-800 mb-3">
+                You've used {keywordLimit.current} of {keywordLimit.max} keywords on your {access.plan} plan.
+              </p>
+              <Link 
+                to="/pricing"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-semibold"
+              >
+                <Crown className="h-4 w-4" />
+                Upgrade to Add More Keywords
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* No Project Warning */}
       {!currentProject ? (
         <div className="rounded-xl border border-[#8A94B3]/30 bg-white p-12 text-center">
@@ -476,19 +544,51 @@ export default function Keywords({
               placeholder="Enter keyword (e.g., 'best running shoes')"
               value={newKeyword}
               onChange={(e) => setNewKeyword(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleAddKeyword()}
-              disabled={submitting}
+              onKeyPress={(e) => e.key === "Enter" && !hasReachedLimit('keywords') && handleAddKeyword()}
+              disabled={submitting || hasReachedLimit('keywords')}
               className="h-12 bg-white border-[#8A94B3]/30 focus:ring-2 focus:ring-[#1B64F2] focus:border-[#1B64F2]"
             />
             <Button 
               onClick={handleAddKeyword} 
-              disabled={submitting}
-              className="bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] font-semibold h-12"
+              disabled={submitting || hasReachedLimit('keywords')}
+              className={`h-12 font-semibold ${
+                hasReachedLimit('keywords')
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B]'
+              }`}
             >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Add
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : hasReachedLimit('keywords') ? (
+                <>
+                  <Lock className="h-4 w-4" />
+                  Limit Reached
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  Add
+                </>
+              )}
             </Button>
           </div>
+
+          {/* Usage Display */}
+          {access && (
+            <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 border border-blue-200 max-w-xl">
+              <span className="text-sm text-blue-900">
+                Keywords: <span className="font-semibold">{keywordLimit.current}/{keywordLimit.isUnlimited ? '∞' : keywordLimit.max}</span>
+              </span>
+              {access.plan === "free" && (
+                <Link 
+                  to="/pricing"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
+                >
+                  Upgrade for more →
+                </Link>
+              )}
+            </div>
+          )}
 
           {/* Keywords Table */}
           {keywords.length === 0 ? (
@@ -595,3 +695,4 @@ export default function Keywords({
     </div>
   );
 }
+// 

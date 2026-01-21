@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, Save, Loader2, Lock, Crown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 
 interface BriefData {
   id: string;
@@ -13,11 +14,13 @@ interface BriefData {
   meta_description: string;
   word_count: number;
   keyword_id: string;
+  user_id: string;
 }
 
 export default function EditBrief() {
   const { briefId } = useParams<{ briefId: string }>();
   const navigate = useNavigate();
+  const { access, loading: accessLoading } = useFeatureAccess();
   
   const [data, setData] = useState<BriefData | null>(null);
   const [editedTitle, setEditedTitle] = useState('');
@@ -28,6 +31,9 @@ export default function EditBrief() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Check if user can edit (free plan has limited editing)
+  const canEdit = access && access.plan !== "free";
+
   useEffect(() => {
     if (!briefId) return;
 
@@ -36,7 +42,7 @@ export default function EditBrief() {
       try {
         const { data, error } = await supabase
           .from('content_briefs')
-          .select('id, title, content, meta_description, word_count, keyword_id')
+          .select('id, title, content, meta_description, word_count, keyword_id, user_id')
           .eq('id', briefId)
           .single();
 
@@ -74,6 +80,16 @@ export default function EditBrief() {
 
   const save = async () => {
     if (!data || !briefId) return;
+
+    if (!canEdit) {
+      toast.error("Upgrade to edit and save content", {
+        action: {
+          label: "Upgrade",
+          onClick: () => navigate("/pricing"),
+        },
+      });
+      return;
+    }
     
     setSaving(true);
     
@@ -109,7 +125,7 @@ export default function EditBrief() {
 
   // Quill editor modules configuration
   const modules = {
-    toolbar: [
+    toolbar: canEdit ? [
       [{ 'header': [1, 2, 3, false] }],
       ['bold', 'italic', 'underline', 'strike'],
       [{ 'color': [] }, { 'background': [] }],
@@ -118,7 +134,7 @@ export default function EditBrief() {
       ['link', 'image'],
       ['clean'],
       ['blockquote', 'code-block']
-    ],
+    ] : false, // Disable toolbar for free users
   };
 
   const formats = [
@@ -131,7 +147,7 @@ export default function EditBrief() {
     'blockquote', 'code-block'
   ];
 
-  if (loading) {
+  if (loading || accessLoading) {
     return (
       <div className="min-h-screen bg-[#F6F8FC] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-[#1B64F2]" />
@@ -173,13 +189,22 @@ export default function EditBrief() {
             
             <button
               onClick={save}
-              disabled={saving}
-              className="flex items-center gap-2 bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B] px-6 py-2.5 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              disabled={saving || !canEdit}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-all shadow-sm ${
+                !canEdit
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B]'
+              } disabled:opacity-50`}
             >
               {saving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Saving...
+                </>
+              ) : !canEdit ? (
+                <>
+                  <Lock className="h-4 w-4" />
+                  Upgrade to Save
                 </>
               ) : (
                 <>
@@ -194,6 +219,34 @@ export default function EditBrief() {
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Upgrade Banner for Free Users */}
+        {!canEdit && (
+          <div className="mb-6 p-6 rounded-xl bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <div className="bg-yellow-500 rounded-full p-2">
+                  <Lock className="h-5 w-5 text-white" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-yellow-900 mb-2 text-lg">
+                  Upgrade to Edit Content
+                </h3>
+                <p className="text-sm text-yellow-800 mb-4">
+                  Content editing is available on paid plans. You can view your content, but editing and saving requires an upgrade.
+                </p>
+                <Link 
+                  to="/pricing"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+                >
+                  <Crown className="h-4 w-4" />
+                  Upgrade Now
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Metadata Card */}
         <div className="bg-white rounded-xl border border-[#E6EAF2] p-6 mb-6 shadow-sm">
           <h2 className="text-lg font-semibold text-[#0B1F3B] mb-4">Article Metadata</h2>
@@ -207,7 +260,10 @@ export default function EditBrief() {
                 type="text"
                 value={editedTitle}
                 onChange={(e) => setEditedTitle(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-[#E6EAF2] rounded-lg text-[#0B1F3B] focus:outline-none focus:ring-2 focus:ring-[#1B64F2] focus:border-transparent"
+                disabled={!canEdit}
+                className={`w-full px-4 py-2.5 bg-white border border-[#E6EAF2] rounded-lg text-[#0B1F3B] focus:outline-none focus:ring-2 focus:ring-[#1B64F2] focus:border-transparent ${
+                  !canEdit ? 'opacity-60 cursor-not-allowed' : ''
+                }`}
                 placeholder="Enter article title..."
               />
             </div>
@@ -220,7 +276,10 @@ export default function EditBrief() {
                 value={editedMetaDesc}
                 onChange={(e) => setEditedMetaDesc(e.target.value)}
                 rows={3}
-                className="w-full px-4 py-2.5 bg-white border border-[#E6EAF2] rounded-lg text-[#0B1F3B] focus:outline-none focus:ring-2 focus:ring-[#1B64F2] focus:border-transparent resize-none"
+                disabled={!canEdit}
+                className={`w-full px-4 py-2.5 bg-white border border-[#E6EAF2] rounded-lg text-[#0B1F3B] focus:outline-none focus:ring-2 focus:ring-[#1B64F2] focus:border-transparent resize-none ${
+                  !canEdit ? 'opacity-60 cursor-not-allowed' : ''
+                }`}
                 placeholder="Enter meta description..."
               />
               <div className="mt-1 text-xs text-[#8A94B3]">
@@ -239,23 +298,38 @@ export default function EditBrief() {
         {/* Rich Text Editor */}
         <div className="bg-white rounded-xl border border-[#E6EAF2] shadow-sm overflow-hidden">
           <div className="border-b border-[#E6EAF2] px-6 py-4 bg-[#F6F8FC]">
-            <h2 className="text-lg font-semibold text-[#0B1F3B]">
-              ✍️ Content Editor
-            </h2>
-            <p className="text-sm text-[#5B6B8A] mt-1">
-              Use the toolbar to format your content - no HTML knowledge required!
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-[#0B1F3B]">
+                  ✍️ Content Editor
+                </h2>
+                <p className="text-sm text-[#5B6B8A] mt-1">
+                  {canEdit 
+                    ? "Use the toolbar to format your content - no HTML knowledge required!" 
+                    : "View-only mode. Upgrade to edit this content."}
+                </p>
+              </div>
+              {!canEdit && (
+                <Link 
+                  to="/pricing"
+                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-semibold transition-all"
+                >
+                  Unlock Editing
+                </Link>
+              )}
+            </div>
           </div>
 
-          <div className="p-6">
+          <div className={`p-6 ${!canEdit ? 'pointer-events-none' : ''}`}>
             <ReactQuill 
               theme="snow"
               value={editedContent}
               onChange={setEditedContent}
               modules={modules}
               formats={formats}
-              className="quill-editor"
-              placeholder="Start writing your content here..."
+              readOnly={!canEdit}
+              className={`quill-editor ${!canEdit ? 'quill-readonly' : ''}`}
+              placeholder={canEdit ? "Start writing your content here..." : ""}
             />
           </div>
         </div>
@@ -288,6 +362,21 @@ export default function EditBrief() {
           border-top: none;
           border-radius: 0 0 8px 8px;
           background: white;
+        }
+
+        /* Read-only styling */
+        .quill-readonly .ql-toolbar {
+          display: none;
+        }
+
+        .quill-readonly .ql-container {
+          border-radius: 8px;
+          background: #F9FAFB;
+        }
+
+        .quill-readonly .ql-editor {
+          cursor: not-allowed;
+          background: #F9FAFB;
         }
 
         .quill-editor .ql-editor h1 {

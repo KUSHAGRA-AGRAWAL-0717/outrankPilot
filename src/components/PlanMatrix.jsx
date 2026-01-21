@@ -29,7 +29,6 @@ const BASE_PLANS = [
       "AI content editor",
       "1 WordPress site",
       "AI-generated images",
-      "YouTube video integration",
       "150+ languages",
       "Email support",
     ],
@@ -57,7 +56,6 @@ const BASE_PLANS = [
       "60 AI articles per month",
       "3 WordPress sites",
       "Daily auto-publishing",
-      "Backlink Exchange",
       "Priority support",
       "Advanced analytics",
       "Custom branding",
@@ -85,10 +83,8 @@ const BASE_PLANS = [
     features: [
       "Everything in Grow",
       "Unlimited AI articles",
-      "Ghost, Webflow, Notion integration",
-      "Wix, Shopify integration",
-      "Webhook support",
-      "Frame integration",
+      "Notion integration",
+      "WordPress integration",
       "Priority feature requests",
       "Unlimited WordPress sites",
       "Dedicated account manager",
@@ -108,15 +104,13 @@ const BASE_PLANS = [
 
 export default function PlanMatrix() {
   const [loading, setLoading] = useState(null);
-  const [currency, setCurrency] = useState({ code: "USD", rate: 1 });
   const [user, setUser] = useState(null);
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const [error, setError] = useState(null);
-  const [billingCycle, setBillingCycle] = useState("monthly"); // Fixed: removed TypeScript syntax
+  const [billingCycle, setBillingCycle] = useState("monthly"); // "monthly" or "yearly"
 
   useEffect(() => {
     checkUser();
-    detectCurrency();
   }, []);
 
   const checkUser = async () => {
@@ -135,102 +129,128 @@ export default function PlanMatrix() {
     }
   };
 
-  const detectCurrency = () => {
-    const locale = navigator.language || "en-US";
-    if (locale.includes("en-IN") || locale.includes("hi-IN")) {
-      setCurrency({ code: "INR", rate: 83 });
-    } else if (locale.includes("en-GH") || locale.includes("ak-GH")) {
-      setCurrency({ code: "GHS", rate: 11 });
-    } else {
-      setCurrency({ code: "USD", rate: 1 });
-    }
-  };
-
   const formatPrice = (priceUsd) => {
     if (priceUsd === 0) return "Free";
     const multiplier = billingCycle === "yearly" ? 10 : 1; // 2 months free on yearly
-    const converted =
-      Number(priceUsd) * Number(currency.rate || 1) * multiplier;
+    const finalPrice = Number(priceUsd) * multiplier;
+    
     try {
-      return new Intl.NumberFormat(undefined, {
+      return new Intl.NumberFormat('en-US', {
         style: "currency",
-        currency: currency.code,
+        currency: "USD",
         maximumFractionDigits: 0,
-      }).format(converted);
+      }).format(finalPrice);
     } catch {
-      return `${currency.code} ${converted.toFixed(0)}`;
+      return `$${finalPrice.toFixed(0)}`;
     }
   };
 
   const subscribe = async (planId) => {
-    if (!user) {
-      alert("Please sign in to subscribe");
-      return;
+  if (!user) {
+    setError("Please sign in to subscribe");
+    return;
+  }
+
+  // Check if already on this plan
+  if (isCurrentPlan(planId)) {
+    setError("You are already subscribed to this plan");
+    return;
+  }
+
+  setLoading(planId);
+  setError(null);
+
+  try {
+    const { data, error } = await supabase.functions.invoke(
+      "create-checkout",
+      {
+        body: { planId, billingCycle },
+      },
+    );
+
+    console.log("Function response:", data);
+
+    if (error) {
+      console.error("Invocation error:", error);
+      throw new Error(error.message || "Failed to create checkout");
     }
 
-    setLoading(planId);
-    setError(null);
-
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        "create-checkout",
-        {
-          body: { planId, billingCycle },
-        },
-      );
-
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      if (data.checkout_url) {
-        window.location.href = data.checkout_url;
-      }
-    } catch (err) {
-      console.error("Subscription error:", err);
-      setError(err.message);
-      setLoading(null);
+    if (data?.error) {
+      console.error("Response error:", data.error);
+      throw new Error(data.error);
     }
-  };
+
+    if (data?.checkout_url) {
+      console.log("Redirecting to:", data.checkout_url);
+      window.location.href = data.checkout_url;
+    } else {
+      throw new Error("No checkout URL received");
+    }
+  } catch (err) {
+    console.error("Subscription error:", err);
+    setError(err.message || "An unexpected error occurred");
+    setLoading(null);
+  }
+};
+
 
   const isCurrentPlan = (planId) => {
     return (
       currentSubscription?.plan === planId &&
-      currentSubscription?.status === "active"
+      (currentSubscription?.status === "active" || currentSubscription?.status === "trialing")
     );
   };
 
   return (
     <div className="pb-20 px-6">
-      {/* Billing Toggle */}
-      <div className="flex justify-center items-center gap-4 mb-12">
-        <span
-          className={`font-medium ${billingCycle === "monthly" ? "text-slate-900" : "text-slate-500"}`}
-        >
-          Monthly
-        </span>
-        <button
-          onClick={() =>
-            setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")
-          }
-          className={`relative w-16 h-8 rounded-full transition-colors ${
-            billingCycle === "yearly" ? "bg-blue-600" : "bg-slate-300"
-          }`}
-        >
-          <div
-            className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${
-              billingCycle === "yearly" ? "translate-x-8" : ""
-            }`}
-          />
-        </button>
-        <span
-          className={`font-medium ${billingCycle === "yearly" ? "text-slate-900" : "text-slate-500"}`}
-        >
-          Yearly
-          <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold">
-            Save 17%
-          </span>
-        </span>
-      </div>
+    {/* Billing Toggle - CORRECTED VERSION */}
+<div className="flex justify-center items-center gap-4 mb-12">
+  <button
+    onClick={() => setBillingCycle("monthly")}
+    className={`font-medium transition-colors ${
+      billingCycle === "monthly" ? "text-slate-900" : "text-slate-500"
+    }`}
+  >
+    Monthly
+  </button>
+  
+  <button
+    type="button"
+    onClick={() => {
+      console.log("Toggle clicked, current:", billingCycle); // Debug log
+      setBillingCycle(prev => {
+        const newValue = prev === "monthly" ? "yearly" : "monthly";
+        console.log("Switching to:", newValue); // Debug log
+        return newValue;
+      });
+    }}
+    className={`toggle-button relative w-16 h-8 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+      billingCycle === "yearly" ? "bg-blue-600" : "bg-slate-300"
+    }`}
+    aria-label="Toggle billing cycle"
+    aria-pressed={billingCycle === "yearly"}
+    role="switch"
+  >
+    <span
+      className={`toggle-switch absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out ${
+        billingCycle === "yearly" ? "translate-x-8" : "translate-x-0"
+      }`}
+    />
+  </button>
+  
+  <button
+    onClick={() => setBillingCycle("yearly")}
+    className={`font-medium transition-colors ${
+      billingCycle === "yearly" ? "text-slate-900" : "text-slate-500"
+    }`}
+  >
+    Yearly
+    <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold">
+      Save 17%
+    </span>
+  </button>
+</div>
+
 
       {error && (
         <div className="max-w-4xl mx-auto mb-8 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
@@ -241,6 +261,36 @@ export default function PlanMatrix() {
           </div>
         </div>
       )}
+      {/* Add this component at the top of your PlanMatrix, before the cards */}
+{currentSubscription && (currentSubscription.status === "active" || currentSubscription.status === "trialing") && (
+  <div className="max-w-4xl mx-auto mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
+    <div className="flex items-start justify-between">
+      <div>
+        <h3 className="text-lg font-bold text-blue-900 mb-1">Current Subscription</h3>
+        <div className="flex items-center gap-3 mb-2">
+          <span className="px-3 py-1 bg-blue-600 text-black rounded-full text-sm font-semibold capitalize">
+            {currentSubscription.plan}
+          </span>
+          {currentSubscription.status === "trialing" && (
+            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
+              Trial Period
+            </span>
+          )}
+        </div>
+        <p className="text-blue-700 text-sm">
+          {currentSubscription.status === "trialing" 
+            ? `Trial ends on ${new Date(currentSubscription.trial_ends_at).toLocaleDateString()}`
+            : "Active subscription"}
+        </p>
+      </div>
+      <div className="text-right">
+        <p className="text-sm text-blue-600 mb-2">Want to upgrade?</p>
+        <p className="text-sm text-blue-600 mb-2">Select a different plan below</p>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* Pricing Cards */}
       <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-7xl mx-auto text-black">
@@ -260,7 +310,7 @@ export default function PlanMatrix() {
               {/* Popular Badge */}
               {plan.popular && (
                 <div className="absolute -top-5 left-0 right-0 flex justify-center">
-                  <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg flex items-center gap-2">
+                  <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-black px-6 py-2 rounded-full text-sm font-bold shadow-lg flex items-center gap-2">
                     <Star className="h-4 w-4 fill-current" />
                     {plan.badge}
                   </div>
@@ -274,7 +324,7 @@ export default function PlanMatrix() {
                     className={`inline-flex h-14 w-14 items-center justify-center rounded-xl mb-4 ${
                       plan.popular
                         ? "bg-gradient-to-br from-blue-600 to-blue-500"
-                        : "bg-gradient-to-br from-slate-700 to-slate-900"
+                        : "bg-gradient-to-br from-slate-900 to-slate-900"
                     }`}
                   >
                     <Icon className="h-7 w-7 text-black" />
@@ -344,7 +394,7 @@ export default function PlanMatrix() {
                 >
                   {isCurrent ? (
                     <>
-                      <Check className="h-5 w-5 text-black" />
+                      <Check className="h-5 w-5" />
                       Current Plan
                     </>
                   ) : loading === plan.id ? (
@@ -352,7 +402,7 @@ export default function PlanMatrix() {
                   ) : (
                     <>
                       Start Free Trial
-                      <ArrowRight className="h-5 w-5 text-black" />
+                      <ArrowRight className="h-5 w-5" />
                     </>
                   )}
                 </button>
@@ -364,7 +414,7 @@ export default function PlanMatrix() {
 
       {/* Trust Footer */}
       <div className="text-center mt-16">
-        <div className="flex items-center justify-center gap-6 text-slate-400">
+        <div className="flex items-center justify-center gap-6 text-black">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             <span className="text-xs">SSL Secured</span>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle2, FileText, Eye, EyeOff } from "lucide-react";
+import { Loader2, CheckCircle2, FileText, Eye, EyeOff, Lock, Crown } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface Brief {
   id: string;
@@ -13,7 +14,7 @@ interface Brief {
   meta_description?: string;
 }
 
-const IntegrationsDashboard = ({ projectId, user }) => {
+const IntegrationsDashboard = ({ projectId, user, access }) => {
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
   
@@ -31,12 +32,15 @@ const IntegrationsDashboard = ({ projectId, user }) => {
   // Testing
   const [testing, setTesting] = useState(false);
 
+  // Check if user has access to Notion integration
+  const hasNotionAccess = access && access.plan !== "free";
+
   useEffect(() => {
-    if (projectId) {
+    if (projectId && hasNotionAccess) {
       loadCredentials();
       loadBriefs();
     }
-  }, [projectId]);
+  }, [projectId, hasNotionAccess]);
 
   const loadCredentials = async () => {
     if (!projectId) return;
@@ -44,7 +48,7 @@ const IntegrationsDashboard = ({ projectId, user }) => {
     try {
       const { data, error } = await supabase
         .from("projects")
-        .select("notion_database_id")
+        .select("notion_database_id, notion_token")
         .eq("id", projectId)
         .single();
 
@@ -53,6 +57,9 @@ const IntegrationsDashboard = ({ projectId, user }) => {
       if (data?.notion_database_id) {
         setNotionDatabaseId(data.notion_database_id);
         setCredentialsSaved(true);
+      }
+      if (data?.notion_token) {
+        setNotionToken(data.notion_token);
       }
     } catch (error) {
       console.error("Error loading credentials:", error);
@@ -68,12 +75,12 @@ const IntegrationsDashboard = ({ projectId, user }) => {
     try {
       setLoading(true);
       
-      // Save database ID to projects table
       const { error } = await supabase
         .from("projects")
-        .update({ notion_database_id: notionDatabaseId.trim(),
+        .update({ 
+          notion_database_id: notionDatabaseId.trim(),
           notion_token: notionToken.trim()
-         })
+        })
         .eq("id", projectId);
 
       if (error) throw error;
@@ -196,7 +203,6 @@ const IntegrationsDashboard = ({ projectId, user }) => {
             errors.push(`${brief?.title}: ${data?.error || "Unknown error"}`);
           }
 
-          // Delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           failCount++;
@@ -205,7 +211,6 @@ const IntegrationsDashboard = ({ projectId, user }) => {
         }
       }
 
-      // Show results
       let message = `✅ Published ${successCount} of ${selectedBriefs.length} briefs`;
       if (failCount > 0) {
         message += `\n\n❌ Failed: ${failCount}\n${errors.slice(0, 3).join('\n')}`;
@@ -216,7 +221,6 @@ const IntegrationsDashboard = ({ projectId, user }) => {
       
       alert(message);
 
-      // Reload briefs and clear selection
       await loadBriefs();
       setSelectedBriefs([]);
     } catch (error) {
@@ -227,8 +231,57 @@ const IntegrationsDashboard = ({ projectId, user }) => {
     }
   };
 
+  // Show upgrade prompt for free users
+  if (!hasNotionAccess) {
+    return (
+      <div className="border-2 p-8 rounded-xl shadow-sm bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
+        <div className="text-center max-w-md mx-auto">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 mb-4">
+            <Lock className="h-8 w-8 text-purple-600" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            Notion Integration
+          </h3>
+          <p className="text-gray-600 mb-6">
+            Automatically publish your content briefs to Notion databases. Available on paid plans.
+          </p>
+          
+          <div className="bg-white rounded-lg p-4 mb-6 text-left">
+            <h4 className="font-semibold text-sm text-gray-900 mb-2">✨ Features:</h4>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• Bulk publish multiple briefs</li>
+              <li>• Automatic formatting</li>
+              <li>• Real-time sync</li>
+              <li>• Custom database mapping</li>
+            </ul>
+          </div>
+
+          <Link 
+            to="/pricing"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl"
+          >
+            <Crown className="h-5 w-5" />
+            Upgrade to Access Notion
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Plan Badge */}
+      {access && access.plan !== "free" && (
+        <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <span className="text-sm font-semibold text-green-900">
+              Notion Integration Active ({access.plan.charAt(0).toUpperCase() + access.plan.slice(1)} Plan)
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Notion Credentials Configuration */}
       <div className="border p-6 rounded-xl shadow-sm bg-purple-50">
         <h3 className="font-bold text-lg mb-4">📝 Notion Configuration</h3>

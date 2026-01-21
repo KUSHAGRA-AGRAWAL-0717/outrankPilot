@@ -12,9 +12,6 @@ verify_jwt = false
 [functions.compute-project-stats]
 verify_jwt = false
 
-[functions.create-checkout]
-verify_jwt = false
-
 [functions.export-project]
 verify_jwt = false
 
@@ -46,4 +43,16 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.track-rankings]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.request-refund]
+verify_jwt = false
+
+[functions.process-refund]
+verify_jwt = false
+
+[functions.paystack-webhook]
 verify_jwt = false

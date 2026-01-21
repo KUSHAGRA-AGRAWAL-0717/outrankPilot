@@ -70,24 +70,65 @@ export default function RefundsTab() {
     setLoading(false);
   };
 
-  const updateRefundStatus = async (refundId: string, status: string) => {
-    setProcessing(refundId);
-    
-    const updates: any = { status };
-    if (status === "success" || status === "failed") {
-      updates.processed_at = new Date().toISOString();
-    }
+ const updateRefundStatus = async (refundId: string, status: string) => {
+  setProcessing(refundId);
+  
+  if (status === "success") {
+    // Call process-refund edge function to approve
+    try {
+      const { data, error } = await supabase.functions.invoke("process-refund", {
+        body: { refundId, action: 'approve' }
+      });
 
+      if (error) {
+        console.error("Invocation error:", error);
+        throw error;
+      }
+      
+      if (data?.error) {
+        console.error("Response error:", data.error);
+        throw new Error(data.error);
+      }
+
+      alert(`✅ ${data.message || 'Refund approved successfully'}`);
+      await fetchRefunds();
+    } catch (err: any) {
+      console.error("Refund approval error:", err);
+      alert(`❌ Error: ${err.message || 'Failed to approve refund'}`);
+    }
+  } else if (status === "failed") {
+    // Reject refund
+    try {
+      const { data, error } = await supabase.functions.invoke("process-refund", {
+        body: { refundId, action: 'reject' }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      alert('Refund rejected successfully');
+      await fetchRefunds();
+    } catch (err: any) {
+      alert(`Error rejecting refund: ${err.message}`);
+    }
+  } else {
+    // For 'processing' status, just update database
     const { error } = await supabase
       .from("refunds")
-      .update(updates)
+      .update({ status })
       .eq("id", refundId);
 
     if (!error) {
       await fetchRefunds();
+    } else {
+      alert(`Error updating status: ${error.message}`);
     }
-    setProcessing(null);
-  };
+  }
+  
+  setProcessing(null);
+};
+
+
 
   const getStatusIcon = (status: string) => {
     switch (status) {

@@ -1,17 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle, Check, CreditCard, Building2, User, FileText } from "lucide-react";
+import { AlertCircle, Check, CreditCard, Building2, FileText, Clock, XCircle } from "lucide-react";
 
 export default function RefundRequest({ subscription }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
+  const [existingRefund, setExistingRefund] = useState(null);
+  const [daysRemaining, setDaysRemaining] = useState(null);
   const [formData, setFormData] = useState({
     reason: "",
     bankName: "",
     accountNumber: "",
     accountName: "",
   });
+
+  useEffect(() => {
+    checkExistingRefund();
+    calculateDaysRemaining();
+  }, []);
+
+  const checkExistingRefund = async () => {
+    if (!subscription?.paystack_reference) return;
+
+    const { data } = await supabase
+      .from("refunds")
+      .select("*")
+      .eq("paystack_reference", subscription.paystack_reference)
+      .single();
+
+    if (data) {
+      setExistingRefund(data);
+    }
+  };
+
+  const calculateDaysRemaining = () => {
+    if (!subscription) return;
+    
+    const startDate = subscription.subscription_start_at || subscription.trial_start_at;
+    if (!startDate) return;
+
+    const daysSinceStart = Math.floor((new Date().getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
+    const remaining = 7 - daysSinceStart;
+    setDaysRemaining(remaining);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,6 +65,156 @@ export default function RefundRequest({ subscription }) {
       setLoading(false);
     }
   };
+
+  // Show existing refund status
+  if (existingRefund) {
+    const statusConfig = {
+      pending: {
+        icon: Clock,
+        color: "yellow",
+        title: "Refund Request Pending",
+        message: "Your refund request is under review. Our team will process it within 5-7 business days."
+      },
+      processing: {
+        icon: Clock,
+        color: "blue",
+        title: "Refund Being Processed",
+        message: "Your refund is currently being processed. Funds will be credited to your account soon."
+      },
+      success: {
+        icon: Check,
+        color: "green",
+        title: "Refund Completed",
+        message: "Your refund has been successfully processed and sent to your bank account."
+      },
+      failed: {
+        icon: XCircle,
+        color: "red",
+        title: "Refund Request Rejected",
+        message: "Your refund request was rejected. Please contact support for more information."
+      }
+    };
+
+    const config = statusConfig[existingRefund.status] || statusConfig.pending;
+    const Icon = config.icon;
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-6">
+        <div className="max-w-2xl w-full">
+          <div className={`bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-${config.color}-200`}>
+            <div className={`bg-gradient-to-r from-${config.color}-500 to-${config.color}-600 p-6`}>
+              <div className="flex items-center justify-center">
+                <div className="bg-white rounded-full p-4">
+                  <Icon className={`h-12 w-12 text-${config.color}-600`} />
+                </div>
+              </div>
+            </div>
+            <div className="p-8 text-center">
+              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+                {config.title}
+              </h3>
+              <p className="text-lg text-gray-600 mb-6">
+                {config.message}
+              </p>
+              
+              <div className={`bg-${config.color}-50 border-2 border-${config.color}-200 rounded-xl p-6 mb-6`}>
+                <div className="grid grid-cols-2 gap-4 text-left">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Amount</p>
+                    <p className={`text-lg font-bold text-${config.color}-900`}>
+                      GHS {(existingRefund.amount / 100).toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Request Date</p>
+                    <p className={`text-lg font-bold text-${config.color}-900`}>
+                      {new Date(existingRefund.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  {existingRefund.bank_name && (
+                    <>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Bank</p>
+                        <p className={`text-lg font-bold text-${config.color}-900`}>
+                          {existingRefund.bank_name}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Account</p>
+                        <p className={`text-lg font-bold text-${config.color}-900`}>
+                          {existingRefund.account_number}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+                {existingRefund.reason && (
+                  <div className="mt-4 pt-4 border-t-2 border-gray-200">
+                    <p className="text-sm text-gray-600 mb-1">Reason</p>
+                    <p className="text-gray-800 text-sm">{existingRefund.reason}</p>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => window.location.href = '/dashboard'}
+                className={`px-8 py-3 bg-gradient-to-r from-${config.color}-600 to-${config.color}-700 hover:from-${config.color}-700 hover:to-${config.color}-800 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl`}
+              >
+                Return to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show refund period expired message
+  if (daysRemaining !== null && daysRemaining < 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-red-50 flex items-center justify-center p-6">
+        <div className="max-w-2xl w-full">
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-red-200">
+            <div className="bg-gradient-to-r from-red-500 to-red-600 p-6">
+              <div className="flex items-center justify-center">
+                <div className="bg-white rounded-full p-4">
+                  <XCircle className="h-12 w-12 text-red-600" />
+                </div>
+              </div>
+            </div>
+            <div className="p-8 text-center">
+              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+                Refund Period Expired
+              </h3>
+              <p className="text-lg text-gray-600 mb-6">
+                The 7-day refund period for your subscription has expired.
+              </p>
+              <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6 mb-6">
+                <p className="text-red-800">
+                  Refunds are only available within 7 days of subscription. 
+                  If you have any concerns, please contact our support team.
+                </p>
+              </div>
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={() => window.location.href = '/dashboard'}
+                  className="px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-lg"
+                >
+                  Return to Dashboard
+                </button>
+                <a
+                  href="mailto:support@outrankpilot.com"
+                  className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg"
+                >
+                  Contact Support
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -58,7 +240,7 @@ export default function RefundRequest({ subscription }) {
                   What happens next?
                 </p>
                 <p className="text-green-700">
-                  Your refund will be processed within <span className="font-bold">5-7 business days</span> and credited to your provided bank account.
+                  Your refund will be reviewed and processed within <span className="font-bold">5-7 business days</span> and credited to your provided bank account.
                 </p>
               </div>
               <button
@@ -88,6 +270,11 @@ export default function RefundRequest({ subscription }) {
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             You can request a refund within 7 days of your subscription start date. Please provide your details below.
           </p>
+          {daysRemaining !== null && daysRemaining >= 0 && (
+            <div className="mt-4 inline-block px-4 py-2 bg-blue-100 text-blue-800 rounded-full font-semibold">
+              {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} remaining for refund
+            </div>
+          )}
         </div>
 
         {/* Main Form Card */}
@@ -108,7 +295,7 @@ export default function RefundRequest({ subscription }) {
               </div>
             )}
 
-            <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Reason */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-2">
@@ -184,31 +371,35 @@ export default function RefundRequest({ subscription }) {
               </div>
 
               {/* Info Box */}
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-blue-900 text-sm mb-1">
-                      Important Information
-                    </h4>
-                    <ul className="text-blue-800 text-sm space-y-1">
-                      <li>• Refunds are only available within 7 days of subscription</li>
-                      <li>• Processing typically takes 5-7 business days</li>
-                      <li>• Please ensure your bank details are correct</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
+             
+<div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+  <div className="flex items-start gap-3">
+    <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+    <div>
+      <h4 className="font-semibold text-blue-900 text-sm mb-1">
+        Important Information
+      </h4>
+      <ul className="text-blue-800 text-sm space-y-1">
+        <li>• Refunds are only available within 7 days of subscription</li>
+        <li>• <strong>Refund will be sent to your original payment card/method</strong></li>
+        <li>• Bank details are backup in case automatic refund fails</li>
+        <li>• Processing typically takes 5-7 business days</li>
+        <li>• Your subscription will be canceled after refund approval</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
 
               {/* Submit Button */}
               <button
-                onClick={handleSubmit}
+                type="submit"
                 disabled={loading || !formData.reason || !formData.bankName || !formData.accountNumber || !formData.accountName}
                 className="w-full py-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-black rounded-xl font-bold text-lg transition-all shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
                     Processing...
                   </>
                 ) : (
@@ -218,7 +409,7 @@ export default function RefundRequest({ subscription }) {
                   </>
                 )}
               </button>
-            </div>
+            </form>
           </div>
         </div>
 

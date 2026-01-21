@@ -4,13 +4,17 @@ import {
   Globe,
   Loader2,
   CheckCircle2,
-  ArrowLeft
+  ArrowLeft,
+  Lock,
+  Crown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { Link } from 'react-router-dom';
 
 interface NewProjectProps {
   onProjectCreated?: (projectId: string) => void;
@@ -27,11 +31,14 @@ export default function NewProject({
 }: NewProjectProps) {
   const navigate = useNavigate();
   const { user, refreshProjects, setCurrentProject } = useApp();
+  const { access, canCreate, hasReachedLimit, getLimitInfo } = useFeatureAccess();
   const [name, setName] = useState('');
   const [business_url, setBusinessUrl] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
   
   const isLoading = propLoading || localLoading;
+  const projectLimit = getLimitInfo('projects');
+  const canCreateProject = canCreate('projects');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +49,17 @@ export default function NewProject({
     }
     if (!business_url.trim()) {
       toast.error('Please enter a business URL');
+      return;
+    }
+
+    // Check project limit
+    if (!canCreateProject) {
+      toast.error(`You've reached your project limit (${projectLimit.current}/${projectLimit.max}). Please upgrade your plan.`, {
+        action: {
+          label: "Upgrade",
+          onClick: () => navigate("/pricing"),
+        },
+      });
       return;
     }
 
@@ -99,6 +117,49 @@ export default function NewProject({
   // Form content component
   const FormContent = () => (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Limit Warning */}
+      {access && hasReachedLimit('projects') && (
+        <div className="p-4 rounded-xl bg-yellow-50 border-2 border-yellow-300">
+          <div className="flex items-start gap-3">
+            <Lock className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-yellow-900 mb-1">
+                Project Limit Reached
+              </p>
+              <p className="text-xs text-yellow-800 mb-2">
+                You've used {projectLimit.current} of {projectLimit.max} projects on your {access.plan} plan.
+              </p>
+              <Link 
+                to="/pricing"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-yellow-700 hover:text-yellow-800"
+              >
+                <Crown className="h-3 w-3" />
+                Upgrade to add more projects →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Project Usage Info */}
+      {access && !hasReachedLimit('projects') && (
+        <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-blue-900 font-medium">
+              Projects: {projectLimit.current}/{projectLimit.isUnlimited ? '∞' : projectLimit.max}
+            </span>
+            {access.plan === "free" && (
+              <Link 
+                to="/pricing"
+                className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
+              >
+                Upgrade for more →
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-2">
         <label className="text-sm font-semibold text-[#0B1F3B]">
           Project Name <span className="text-red-500">*</span>
@@ -108,7 +169,7 @@ export default function NewProject({
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          disabled={isLoading}
+          disabled={isLoading || hasReachedLimit('projects')}
           className="h-12 bg-white border-2 border-[#E5E7EB] focus:border-[#1B64F2] focus:ring-2 focus:ring-[#1B64F2]/20 text-[#0B1F3B] placeholder:text-[#8A94B3] disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </div>
@@ -122,7 +183,7 @@ export default function NewProject({
           value={business_url}
           onChange={(e) => setBusinessUrl(e.target.value)}
           required
-          disabled={isLoading}
+          disabled={isLoading || hasReachedLimit('projects')}
           className="h-12 bg-white border-2 border-[#E5E7EB] focus:border-[#1B64F2] focus:ring-2 focus:ring-[#1B64F2]/20 text-[#0B1F3B] placeholder:text-[#8A94B3] disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <p className="text-xs text-[#5B6B8A] mt-1">
@@ -154,21 +215,39 @@ export default function NewProject({
         type="submit" 
         size="lg" 
         className={`w-full h-13 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 ${
-          onboardingMode 
+          hasReachedLimit('projects')
+            ? 'bg-gray-400 cursor-not-allowed'
+            : onboardingMode 
             ? 'bg-gradient-to-r from-[#1B64F2] to-[#1246C9] hover:from-[#1246C9] hover:to-[#0F3BA0] text-white' 
             : 'bg-[#FFD84D] hover:bg-[#F5C842] text-[#0B1F3B]'
         }`}
-        disabled={isLoading}
+        disabled={isLoading || hasReachedLimit('projects')}
       >
         {isLoading ? (
           <div className="flex items-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span>Creating Project...</span>
           </div>
+        ) : hasReachedLimit('projects') ? (
+          <div className="flex items-center gap-2">
+            <Lock className="h-4 w-4" />
+            <span>Upgrade to Create More Projects</span>
+          </div>
         ) : (
           <span>{onboardingMode ? 'Create Project & Continue →' : 'Create Project'}</span>
         )}
       </Button>
+
+      {hasReachedLimit('projects') && (
+        <div className="text-center">
+          <Link 
+            to="/pricing"
+            className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
+          >
+            View pricing plans →
+          </Link>
+        </div>
+      )}
     </form>
   );
 
