@@ -111,7 +111,7 @@ export default function PlansPage() {
               Our team is here to help you find the perfect plan for your needs.
             </p>
             <button className="px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1">
-              <a href="mailto:outrankpilot@gmail.com">Contact Sales at : outrankpilot@gmail.com</a>
+              <a href="mailto:support@outrankpilot.com">Contact Sales at : support@outrankpilot.com</a>
             </button>
           </div>
         </div>
