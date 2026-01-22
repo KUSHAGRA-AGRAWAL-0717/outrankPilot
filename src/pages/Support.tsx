@@ -15,6 +15,7 @@ import {
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import Navbar from '../components/Navbar';
 import logo from "../../public/logo2.jpeg";
 
 const faqs = [
@@ -110,7 +111,6 @@ export default function Support() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
      
 
       {/* Hero Section */}
@@ -161,9 +161,12 @@ export default function Support() {
                     <Clock className="h-4 w-4" />
                     <span>{channel.availability}</span>
                   </div>
-                  {/* <button className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold px-4 py-2.5 rounded-lg transition-all">
-                    {channel.action}
-                  </button> */}
+                  <button className="px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1">
+                     <a href="mailto:support@outrankpilot.com">Contact Sales at : support@outrankpilot.com</a>
+                  </button>
+                   {/* <button className="px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1">
+              <a href="mailto:support@outrankpilot.com">Contact Sales at : support@outrankpilot.com {channel.action}</a>
+            </button> */}
                 </div>
               ))}
             </div>
@@ -300,16 +303,7 @@ export default function Support() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 py-12 bg-gray-900">
-        <div className="container mx-auto px-6">
-          <div className="text-center">
-            <p className="text-gray-400 text-sm">
-              © 2026 OutrankPilot. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+    
     </div>
   );
 }

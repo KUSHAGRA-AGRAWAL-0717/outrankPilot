@@ -17,6 +17,9 @@ import {
   Settings
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+
 import logo from "../../public/logo2.jpeg";
 
 const allFeatures = [
@@ -150,6 +153,23 @@ const allFeatures = [
 
 export default function Features() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+useEffect(() => {
+  if (location.hash) {
+    const id = location.hash.replace("#", "");
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) {
+        window.scrollTo({
+          top: el.offsetTop - 80, // navbar offset
+          behavior: "smooth",
+        });
+      }
+    }, 100);
+  }
+}, [location]);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -283,16 +303,7 @@ export default function Features() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 py-12 bg-gray-900">
-        <div className="container mx-auto px-6">
-          <div className="text-center">
-            <p className="text-gray-400 text-sm">
-              © 2026 OutrankPilot. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+     
     </div>
   );
 }

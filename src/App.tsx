@@ -31,10 +31,12 @@ import Support from "./pages/Support";
 import Affiliate from "./pages/Affiliate";
 import Examples from "./pages/Examples";
 import Features from "./pages/Features";
+import Navbar from "./components/Navbar.jsx";
 
 import { DashboardLayout } from "./components/layout/DashboardLayout.js";
 import Integrations from "./pages/Integrations.jsx";
 import BlogPostPage from "./pages/BlogPostPage.js";
+import PublicLayout from "./components/PublicLayout.jsx";
 
 const PageWithSidebar = ({ children }) => {
   return <DashboardLayout>{children}</DashboardLayout>;
@@ -49,18 +51,27 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+         {/* <Navbar /> */}
           <Routes>
-            <Route path="/" element={<Index />} />
+         
+
+           
+           
+           <Route element={<PublicLayout />}>
+          <Route path="/" element={<Index />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/public-services" element={<PublicServicesPage />} />
+          <Route path="/affiliate-program" element={<Affiliate />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/examples" element={<Examples />} />
+          <Route path="/features" element={<Features />} />
+        </Route>
+  
+
             <Route path="/auth" element={<Auth />} />
-            <Route path="/blog" element={<BlogPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/public-services" element={<PublicServicesPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/blog/:slug" element={<BlogPostPage />} />
-            <Route path="/affiliate-program" element={<Affiliate />} />
-            <Route path="/support" element={<Support />} />
-            <Route path="/examples" element={<Examples />} />
-            <Route path="/features/:id" element={<Features />} />
             <Route
               path="/auth/notion/callback"
               element={<AuthNotionCallback />}
@@ -91,43 +102,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-
-            {/* just example route to check the pages */}
-            {/* <Route
-              path="/step-project"
-              element={
-                <ProtectedRoute>
-                  <StepProject />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/step-integrations"
-              element={
-                <ProtectedRoute>
-                  <StepIntegrations />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/step-content"
-              element={
-                <ProtectedRoute>
-                  <StepContent />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/step-keywords"
-              element={
-                <ProtectedRoute>
-                  <StepKeywords />
-                </ProtectedRoute>
-              }
-            /> */}
 
             <Route
               path="/keywords"
