@@ -69,7 +69,7 @@ export function Header() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-[#8A94B3]/30" />
             <DropdownMenuItem 
-              onClick={() => navigate('/settings')}
+              onClick={() => navigate('/integrations')}
               className="cursor-pointer rounded-lg mx-1 my-1 text-[#0B1F3B] hover:bg-[#F6F8FC]"
             >
               Settings
