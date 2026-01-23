@@ -12,12 +12,11 @@ import {
   Globe,
   Sparkles,
   FolderOpen,
-  Zap
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/contexts/AppContext";
 import logo from "../../../public/logo2.jpeg";
-
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -28,7 +27,7 @@ const navigation = [
   { name: "Autopilot", href: "/autopilot", icon: Zap },
   { name: "Integrations", href: "/integrations", icon: Settings },
 ];
-  
+
 export function Sidebar() {
   const location = useLocation();
   const { currentProject, projects, setCurrentProject } = useApp();
@@ -36,21 +35,23 @@ export function Sidebar() {
   const { access, loading, getLimitInfo } = useFeatureAccess();
 
   // Get limit info for display
-  const articleInfo = getLimitInfo('articles');
-  const projectInfo = getLimitInfo('projects');
-  const keywordInfo = getLimitInfo('keywords');
+  const articleInfo = getLimitInfo("articles");
+  const projectInfo = getLimitInfo("projects");
+  const keywordInfo = getLimitInfo("keywords");
 
   return (
     <aside className="flex h-screen w-64 flex-col bg-white border-r border-[#8A94B3]/30">
       {/* Logo */}
       <div className="flex h-20 items-center gap-2 px-6 border-b border-[#8A94B3]/30">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFD84D]">
-          <img src={logo} alt="OutrankPilot Logo" className="h-10 w-10 rounded-full" />
+          <img
+            src={logo}
+            alt="OutrankPilot Logo"
+            className="h-10 w-10 rounded-full"
+          />
         </div>
-        
-        <span className="text-xl font-bold text-[#0B1F3B]">
-          OutrankPilot
-        </span>
+
+        <span className="text-xl font-bold text-[#0B1F3B]">OutrankPilot</span>
       </div>
 
       {/* Project Switcher */}
@@ -79,7 +80,7 @@ export function Sidebar() {
           <ChevronDown
             className={cn(
               "h-5 w-5 text-[#5B6B8A] transition-transform duration-200",
-              projectsOpen && "rotate-180"
+              projectsOpen && "rotate-180",
             )}
           />
         </button>
@@ -104,7 +105,7 @@ export function Sidebar() {
                       "flex w-full items-center gap-3 rounded-lg p-3 text-left transition-all",
                       currentProject?.id === project.id
                         ? "bg-[#1B64F2]/10 text-[#1B64F2]"
-                        : "text-[#0B1F3B] hover:bg-[#F6F8FC]"
+                        : "text-[#0B1F3B] hover:bg-[#F6F8FC]",
                     )}
                   >
                     <Globe className="h-4 w-4" />
@@ -143,7 +144,7 @@ export function Sidebar() {
                 "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
                 isActive
                   ? "bg-[#FFD84D] text-[#0B1F3B] shadow-md"
-                  : "text-[#0B1F3B] hover:bg-[#F6F8FC]"
+                  : "text-[#0B1F3B] hover:bg-[#F6F8FC]",
               )}
             >
               <item.icon className="h-5 w-5" />
@@ -169,12 +170,14 @@ export function Sidebar() {
               <span className="text-xs font-medium text-[#5B6B8A]">
                 Current Plan
               </span>
-              <span className={cn(
-                "px-2 py-1 rounded-full text-xs font-bold",
-                access.plan === "free" 
-                  ? "bg-gray-100 text-gray-700" 
-                  : "bg-gradient-to-r from-[#FFD84D] to-yellow-400 text-[#0B1F3B]"
-              )}>
+              <span
+                className={cn(
+                  "px-2 py-1 rounded-full text-xs font-bold",
+                  access.plan === "free"
+                    ? "bg-gray-100 text-gray-700"
+                    : "bg-gradient-to-r from-[#FFD84D] to-yellow-400 text-[#0B1F3B]",
+                )}
+              >
                 {access.plan.charAt(0).toUpperCase() + access.plan.slice(1)}
               </span>
             </div>
@@ -186,23 +189,25 @@ export function Sidebar() {
                   Monthly Articles
                 </span>
                 <span className="text-xs font-bold text-[#0B1F3B]">
-                  {articleInfo.isUnlimited 
-                    ? `${articleInfo.current}/∞` 
+                  {articleInfo.isUnlimited
+                    ? `${articleInfo.current}/∞`
                     : `${articleInfo.current}/${articleInfo.max}`}
                 </span>
               </div>
               <div className="h-2 rounded-full bg-[#8A94B3]/20 overflow-hidden">
-                <div 
+                <div
                   className={cn(
                     "h-full rounded-full transition-all",
-                    articleInfo.percentage >= 90 ? "bg-red-500" :
-                    articleInfo.percentage >= 70 ? "bg-yellow-500" :
-                    "bg-[#1B64F2]"
+                    articleInfo.percentage >= 90
+                      ? "bg-red-500"
+                      : articleInfo.percentage >= 70
+                        ? "bg-yellow-500"
+                        : "bg-[#1B64F2]",
                   )}
-                  style={{ 
-                    width: articleInfo.isUnlimited 
-                      ? '0%' 
-                      : `${Math.min(articleInfo.percentage, 100)}%` 
+                  style={{
+                    width: articleInfo.isUnlimited
+                      ? "0%"
+                      : `${Math.min(articleInfo.percentage, 100)}%`,
                   }}
                 />
               </div>
@@ -215,23 +220,25 @@ export function Sidebar() {
                   Projects
                 </span>
                 <span className="text-xs font-bold text-[#0B1F3B]">
-                  {projectInfo.isUnlimited 
-                    ? `${projectInfo.current}/∞` 
+                  {projectInfo.isUnlimited
+                    ? `${projectInfo.current}/∞`
                     : `${projectInfo.current}/${projectInfo.max}`}
                 </span>
               </div>
               <div className="h-2 rounded-full bg-[#8A94B3]/20 overflow-hidden">
-                <div 
+                <div
                   className={cn(
                     "h-full rounded-full transition-all",
-                    projectInfo.percentage >= 90 ? "bg-red-500" :
-                    projectInfo.percentage >= 70 ? "bg-yellow-500" :
-                    "bg-[#1B64F2]"
+                    projectInfo.percentage >= 90
+                      ? "bg-red-500"
+                      : projectInfo.percentage >= 70
+                        ? "bg-yellow-500"
+                        : "bg-[#1B64F2]",
                   )}
-                  style={{ 
-                    width: projectInfo.isUnlimited 
-                      ? '0%' 
-                      : `${Math.min(projectInfo.percentage, 100)}%` 
+                  style={{
+                    width: projectInfo.isUnlimited
+                      ? "0%"
+                      : `${Math.min(projectInfo.percentage, 100)}%`,
                   }}
                 />
               </div>
@@ -244,23 +251,25 @@ export function Sidebar() {
                   Keywords
                 </span>
                 <span className="text-xs font-bold text-[#0B1F3B]">
-                  {keywordInfo.isUnlimited 
-                    ? `${keywordInfo.current}/∞` 
+                  {keywordInfo.isUnlimited
+                    ? `${keywordInfo.current}/∞`
                     : `${keywordInfo.current}/${keywordInfo.max}`}
                 </span>
               </div>
               <div className="h-2 rounded-full bg-[#8A94B3]/20 overflow-hidden">
-                <div 
+                <div
                   className={cn(
                     "h-full rounded-full transition-all",
-                    keywordInfo.percentage >= 90 ? "bg-red-500" :
-                    keywordInfo.percentage >= 70 ? "bg-yellow-500" :
-                    "bg-[#1B64F2]"
+                    keywordInfo.percentage >= 90
+                      ? "bg-red-500"
+                      : keywordInfo.percentage >= 70
+                        ? "bg-yellow-500"
+                        : "bg-[#1B64F2]",
                   )}
-                  style={{ 
-                    width: keywordInfo.isUnlimited 
-                      ? '0%' 
-                      : `${Math.min(keywordInfo.percentage, 100)}%` 
+                  style={{
+                    width: keywordInfo.isUnlimited
+                      ? "0%"
+                      : `${Math.min(keywordInfo.percentage, 100)}%`,
                   }}
                 />
               </div>
@@ -268,8 +277,8 @@ export function Sidebar() {
 
             {/* Upgrade Link for Free Users */}
             {access.plan === "free" && (
-              <Link 
-                to="/pricing"
+              <Link
+                to="/plans"
                 className="block w-full text-center px-4 py-2 bg-gradient-to-r from-[#FFD84D] to-yellow-400 hover:from-yellow-400 hover:to-[#FFD84D] text-[#0B1F3B] rounded-xl font-semibold text-sm transition-all shadow-md hover:shadow-lg"
               >
                 <div className="flex items-center justify-center gap-2">
