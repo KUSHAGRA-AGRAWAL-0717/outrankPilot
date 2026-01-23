@@ -217,7 +217,7 @@ export default function Settings() {
             </div>
             {access.plan === "free" && (
               <Link 
-                to="/pricing"
+                to="/plans"
                 className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-semibold transition-all"
               >
                 Upgrade Now
